@@ -10,10 +10,10 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.shelly.internal.coap;
+package org.openhab.binding.shelly.internal.api1;
 
 import static org.openhab.binding.shelly.internal.ShellyBindingConstants.*;
-import static org.openhab.binding.shelly.internal.coap.ShellyCoapJSonDTO.*;
+import static org.openhab.binding.shelly.internal.api1.Shelly1CoapJSonDTO.*;
 import static org.openhab.binding.shelly.internal.util.ShellyUtils.*;
 
 import java.net.SocketException;
@@ -36,18 +36,19 @@ import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.shelly.internal.api.ShellyApiException;
+import org.openhab.binding.shelly.internal.api.ShellyApiInterface;
 import org.openhab.binding.shelly.internal.api.ShellyDeviceProfile;
-import org.openhab.binding.shelly.internal.api.ShellyHttpApi;
-import org.openhab.binding.shelly.internal.coap.ShellyCoapJSonDTO.CoIotDescrBlk;
-import org.openhab.binding.shelly.internal.coap.ShellyCoapJSonDTO.CoIotDescrSen;
-import org.openhab.binding.shelly.internal.coap.ShellyCoapJSonDTO.CoIotDevDescrTypeAdapter;
-import org.openhab.binding.shelly.internal.coap.ShellyCoapJSonDTO.CoIotDevDescription;
-import org.openhab.binding.shelly.internal.coap.ShellyCoapJSonDTO.CoIotGenericSensorList;
-import org.openhab.binding.shelly.internal.coap.ShellyCoapJSonDTO.CoIotSensor;
-import org.openhab.binding.shelly.internal.coap.ShellyCoapJSonDTO.CoIotSensorTypeAdapter;
+import org.openhab.binding.shelly.internal.api1.Shelly1CoapJSonDTO.CoIotDescrBlk;
+import org.openhab.binding.shelly.internal.api1.Shelly1CoapJSonDTO.CoIotDescrSen;
+import org.openhab.binding.shelly.internal.api1.Shelly1CoapJSonDTO.CoIotDevDescrTypeAdapter;
+import org.openhab.binding.shelly.internal.api1.Shelly1CoapJSonDTO.CoIotDevDescription;
+import org.openhab.binding.shelly.internal.api1.Shelly1CoapJSonDTO.CoIotGenericSensorList;
+import org.openhab.binding.shelly.internal.api1.Shelly1CoapJSonDTO.CoIotSensor;
+import org.openhab.binding.shelly.internal.api1.Shelly1CoapJSonDTO.CoIotSensorTypeAdapter;
 import org.openhab.binding.shelly.internal.config.ShellyThingConfiguration;
 import org.openhab.binding.shelly.internal.handler.ShellyBaseHandler;
 import org.openhab.binding.shelly.internal.handler.ShellyColorUtils;
+import org.openhab.binding.shelly.internal.handler.ShellyThingInterface;
 import org.openhab.core.library.unit.Units;
 import org.openhab.core.types.State;
 import org.slf4j.Logger;
@@ -58,26 +59,26 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 
 /**
- * The {@link ShellyCoapHandler} handles the CoIoT/CoAP registration and events.
+ * The {@link Shelly1CoapHandler} handles the CoIoT/CoAP registration and events.
  *
  * @author Markus Michels - Initial contribution
  */
 @NonNullByDefault
-public class ShellyCoapHandler implements ShellyCoapListener {
+public class Shelly1CoapHandler implements Shelly1CoapListener {
     private static final byte[] EMPTY_BYTE = new byte[0];
 
-    private final Logger logger = LoggerFactory.getLogger(ShellyCoapHandler.class);
-    private final ShellyBaseHandler thingHandler;
+    private final Logger logger = LoggerFactory.getLogger(Shelly1CoapHandler.class);
+    private final ShellyThingInterface thingHandler;
     private ShellyThingConfiguration config = new ShellyThingConfiguration();
     private final GsonBuilder gsonBuilder = new GsonBuilder();
     private final Gson gson;
     private String thingName;
 
     private boolean coiotBound = false;
-    private ShellyCoIoTInterface coiot;
+    private Shelly1CoIoTInterface coiot;
     private int coiotVers = -1;
 
-    private final ShellyCoapServer coapServer;
+    private final Shelly1CoapServer coapServer;
     private @Nullable CoapClient statusClient;
     private Request reqDescription = new Request(Code.GET, Type.CON);
     private Request reqStatus = new Request(Code.GET, Type.CON);
@@ -91,15 +92,15 @@ public class ShellyCoapHandler implements ShellyCoapListener {
     private Map<String, CoIotDescrBlk> blkMap = new LinkedHashMap<>();
     private Map<String, CoIotDescrSen> sensorMap = new LinkedHashMap<>();
     private ShellyDeviceProfile profile;
-    private ShellyHttpApi api;
+    private ShellyApiInterface api;
 
-    public ShellyCoapHandler(ShellyBaseHandler thingHandler, ShellyCoapServer coapServer) {
+    public Shelly1CoapHandler(ShellyBaseHandler thingHandler, Shelly1CoapServer coapServer) {
         this.thingHandler = thingHandler;
         this.thingName = thingHandler.thingName;
         this.profile = thingHandler.getProfile();
         this.api = thingHandler.getApi();
         this.coapServer = coapServer;
-        this.coiot = new ShellyCoIoTVersion2(thingName, thingHandler, blkMap, sensorMap); // Default: V2
+        this.coiot = new Shelly1CoIoTVersion2(thingName, thingHandler, blkMap, sensorMap); // Default: V2
 
         gsonBuilder.registerTypeAdapter(CoIotDevDescription.class, new CoIotDevDescrTypeAdapter());
         gsonBuilder.registerTypeAdapter(CoIotGenericSensorList.class, new CoIotSensorTypeAdapter());
@@ -240,9 +241,9 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                             thingHandler.updateProperties(PROPERTY_COAP_VERSION, sVersion);
                             logger.debug("{}: CoIoT Version {} detected", thingName, iVersion);
                             if (iVersion == COIOT_VERSION_1) {
-                                coiot = new ShellyCoIoTVersion1(thingName, thingHandler, blkMap, sensorMap);
+                                coiot = new Shelly1CoIoTVersion1(thingName, thingHandler, blkMap, sensorMap);
                             } else if (iVersion == COIOT_VERSION_2) {
-                                coiot = new ShellyCoIoTVersion2(thingName, thingHandler, blkMap, sensorMap);
+                                coiot = new Shelly1CoIoTVersion2(thingName, thingHandler, blkMap, sensorMap);
                             } else {
                                 logger.warn("{}: Unsupported CoAP version detected: {}", thingName, sVersion);
                                 return;
@@ -506,15 +507,11 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                     String meter = CHANNEL_GROUP_METER + i;
                     double current = thingHandler.getChannelDouble(meter, CHANNEL_METER_CURRENTWATTS);
                     double total = thingHandler.getChannelDouble(meter, CHANNEL_METER_TOTALKWH);
-                    logger.debug("{}: {}#{}={}, total={}", thingName, meter, CHANNEL_METER_CURRENTWATTS, current,
-                            totalCurrent);
                     totalCurrent += current >= 0 ? current : 0;
                     totalKWH += total >= 0 ? total : 0;
                     updateMeter |= current >= 0 | total >= 0;
                     i++;
                 }
-                logger.debug("{}: totalCurrent={}, totalKWH={}, update={}", thingName, totalCurrent, totalKWH,
-                        updateMeter);
                 if (updateMeter) {
                     thingHandler.updateChannel(CHANNEL_GROUP_METER, CHANNEL_METER_CURRENTWATTS,
                             toQuantityType(totalCurrent, DIGITS_WATT, Units.WATT));
@@ -525,10 +522,7 @@ public class ShellyCoapHandler implements ShellyCoapListener {
             // Old firmware release are lacking various status values, which are not updated using CoIoT.
             // In this case we keep a refresh so it gets polled using REST. Beginning with Firmware 1.6 most
             // of the values are available
-            if ((!thingHandler.autoCoIoT && (thingHandler.scheduledUpdates < 1))
-                    || (thingHandler.autoCoIoT && !profile.isLight && !profile.hasBattery)) {
-                thingHandler.requestUpdates(1, false);
-            }
+            thingHandler.triggerUpdateFromCoap();
         } else {
             if (failed == sensorUpdates.size()) {
                 logger.debug("{}: Device description problem detected, re-discover", thingName);

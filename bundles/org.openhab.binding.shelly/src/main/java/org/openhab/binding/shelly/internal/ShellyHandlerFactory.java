@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jetty.client.HttpClient;
-import org.openhab.binding.shelly.internal.coap.ShellyCoapServer;
+import org.openhab.binding.shelly.internal.api1.Shelly1CoapServer;
 import org.openhab.binding.shelly.internal.config.ShellyBindingConfiguration;
 import org.openhab.binding.shelly.internal.handler.ShellyBaseHandler;
 import org.openhab.binding.shelly.internal.handler.ShellyLightHandler;
@@ -61,7 +61,7 @@ public class ShellyHandlerFactory extends BaseThingHandlerFactory {
     private final Logger logger = LoggerFactory.getLogger(ShellyHandlerFactory.class);
     private final HttpClient httpClient;
     private final ShellyTranslationProvider messages;
-    private final ShellyCoapServer coapServer;
+    private final Shelly1CoapServer coapServer;
 
     private final Map<String, ShellyBaseHandler> deviceListeners = new ConcurrentHashMap<>();
     private ShellyBindingConfiguration bindingConfig = new ShellyBindingConfiguration();
@@ -100,10 +100,7 @@ public class ShellyHandlerFactory extends BaseThingHandlerFactory {
         }
         logger.debug("Using OH HTTP port {}", httpPort);
 
-        this.coapServer = new ShellyCoapServer();
-
-        // Promote Shelly Manager usage
-        logger.info("{}", messages.get("status.managerstarted", localIP, httpPort));
+        this.coapServer = new Shelly1CoapServer();
     }
 
     @Override

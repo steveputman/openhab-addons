@@ -346,4 +346,8 @@ public class ShellyUtils {
         }
         return new DecimalType(strength);
     }
+
+    public static boolean isDigit(char c) {
+        return c >= '0' && c <= '9';
+    }
 }

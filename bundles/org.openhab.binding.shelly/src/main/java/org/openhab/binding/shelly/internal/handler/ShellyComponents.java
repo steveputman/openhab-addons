@@ -13,19 +13,19 @@
 package org.openhab.binding.shelly.internal.handler;
 
 import static org.openhab.binding.shelly.internal.ShellyBindingConstants.*;
-import static org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.*;
+import static org.openhab.binding.shelly.internal.api1.Shelly1ApiJsonDTO.*;
 import static org.openhab.binding.shelly.internal.util.ShellyUtils.*;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.shelly.internal.api.ShellyApiException;
-import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsEMeter;
-import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsMeter;
-import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsStatus;
-import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellyStatusSensor;
-import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellyStatusSensor.ShellyADC;
-import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellyThermnostat;
 import org.openhab.binding.shelly.internal.api.ShellyDeviceProfile;
+import org.openhab.binding.shelly.internal.api1.Shelly1ApiJsonDTO.ShellySettingsEMeter;
+import org.openhab.binding.shelly.internal.api1.Shelly1ApiJsonDTO.ShellySettingsMeter;
+import org.openhab.binding.shelly.internal.api1.Shelly1ApiJsonDTO.ShellySettingsStatus;
+import org.openhab.binding.shelly.internal.api1.Shelly1ApiJsonDTO.ShellyStatusSensor;
+import org.openhab.binding.shelly.internal.api1.Shelly1ApiJsonDTO.ShellyStatusSensor.ShellyADC;
+import org.openhab.binding.shelly.internal.api1.Shelly1ApiJsonDTO.ShellyThermnostat;
 import org.openhab.binding.shelly.internal.provider.ShellyChannelDefinitions;
 import org.openhab.core.library.types.OnOffType;
 import org.openhab.core.library.types.OpenClosedType;
@@ -108,16 +108,9 @@ public class ShellyComponents {
                 int m = 0;
                 if (!profile.isEMeter) {
                     for (ShellySettingsMeter meter : status.meters) {
-                        Integer meterIndex = m + 1;
                         if (getBool(meter.isValid) || profile.isLight) { // RGBW2-white doesn't report valid flag
                                                                          // correctly in white mode
-                            String groupName = "";
-                            if (profile.numMeters > 1) {
-                                groupName = CHANNEL_GROUP_METER + meterIndex.toString();
-                            } else {
-                                groupName = CHANNEL_GROUP_METER;
-                            }
-
+                            String groupName = profile.getMeterGroup(m);
                             if (!thingHandler.areChannelsCreated()) {
                                 // skip for Shelly Bulb: JSON has a meter, but values don't get updated
                                 if (!profile.isBulb) {
@@ -148,10 +141,8 @@ public class ShellyComponents {
                     }
                 } else {
                     for (ShellySettingsEMeter emeter : status.emeters) {
-                        Integer meterIndex = m + 1;
                         if (getBool(emeter.isValid)) {
-                            String groupName = profile.numMeters > 1 ? CHANNEL_GROUP_METER + meterIndex.toString()
-                                    : CHANNEL_GROUP_METER;
+                            String groupName = profile.getMeterGroup(m);
                             if (!thingHandler.areChannelsCreated()) {
                                 thingHandler.updateChannelDefinitions(ShellyChannelDefinitions
                                         .createEMeterChannels(thingHandler.getThing(), emeter, groupName));
@@ -244,7 +235,7 @@ public class ShellyComponents {
         }
 
         // EM: compute from provided values
-        if (Math.abs(emeter.power) + Math.abs(emeter.reactive) > 1.5) {
+        if (emeter.reactive != null && Math.abs(emeter.power) + Math.abs(emeter.reactive) > 1.5) {
             double pf = emeter.power / Math.sqrt(emeter.power * emeter.power + emeter.reactive * emeter.reactive);
             return pf;
         }
@@ -283,10 +274,10 @@ public class ShellyComponents {
                 String sensorError = sdata.sensorError;
                 boolean changed = thingHandler.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_ERROR,
                         getStringType(sensorError));
-                if (!"0".equals(sensorError) && changed) {
+                if (changed && !"0".equals(sensorError)) {
                     thingHandler.postEvent(getString(sdata.sensorError), true);
-                    updated |= changed;
                 }
+                updated |= changed;
             }
             if ((sdata.tmp != null) && getBool(sdata.tmp.isValid)) {
                 thingHandler.logger.trace("{}: Updating temperature", thingHandler.thingName);
@@ -313,18 +304,21 @@ public class ShellyComponents {
                 updated |= thingHandler.updateChannel(CHANNEL_GROUP_CONTROL, CHANNEL_CONTROL_MODE,
                         getStringType(getBool(t.targetTemp.enabled) ? SHELLY_TRV_MODE_AUTO : SHELLY_TRV_MODE_MANUAL));
                 updated |= thingHandler.updateChannel(CHANNEL_GROUP_CONTROL, CHANNEL_CONTROL_PROFILE,
-                        getDecimal(getBool(t.schedule) ? t.profile : 0));
+                        getDecimal(getBool(t.schedule) ? t.profile + 1 : 0));
                 updated |= thingHandler.updateChannel(CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_SCHEDULE,
                         getOnOff(t.schedule));
                 if (t.tmp != null) {
                     Double temp = convertToC(t.tmp.value, getString(t.tmp.units));
-                    // Some devices report values = -999 or 99 during fw update
-                    boolean valid = temp.intValue() > -50 && temp.intValue() < 90;
                     updated |= thingHandler.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_TEMP,
                             toQuantityType(temp.doubleValue(), DIGITS_TEMP, SIUnits.CELSIUS));
                     temp = convertToC(t.targetTemp.value, getString(t.targetTemp.unit));
                     updated |= thingHandler.updateChannel(CHANNEL_GROUP_CONTROL, CHANNEL_CONTROL_SETTEMP,
-                            toQuantityType(t.targetTemp.value, DIGITS_TEMP, SIUnits.CELSIUS));
+                            /* t.targetTemp.enabled ? */toQuantityType(t.targetTemp.value, DIGITS_TEMP, SIUnits.CELSIUS)
+                    /*
+                     * toQuantityType(t.targetTemp.value, DIGITS_NONE,
+                     * Units.PERCENT)
+                     * : UnDefType.UNDEF
+                     */);
                 }
                 if (t.pos != null) {
                     updated |= thingHandler.updateChannel(CHANNEL_GROUP_CONTROL, CHANNEL_CONTROL_POSITION,

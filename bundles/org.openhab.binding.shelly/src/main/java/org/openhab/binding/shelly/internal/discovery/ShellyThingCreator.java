@@ -13,7 +13,7 @@
 package org.openhab.binding.shelly.internal.discovery;
 
 import static org.openhab.binding.shelly.internal.ShellyBindingConstants.*;
-import static org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.*;
+import static org.openhab.binding.shelly.internal.api1.Shelly1ApiJsonDTO.*;
 import static org.openhab.binding.shelly.internal.util.ShellyUtils.*;
 
 import java.util.LinkedHashMap;
@@ -57,6 +57,21 @@ public class ShellyThingCreator {
         THING_TYPE_MAPPING.put(SHELLYDT_TRV, THING_TYPE_SHELLYTRV_STR);
         THING_TYPE_MAPPING.put(SHELLYDT_MOTION, THING_TYPE_SHELLYMOTION_STR);
 
+        // Plus/Pro
+        THING_TYPE_MAPPING.put(SHELLYDT_PLUS1, THING_TYPE_SHELLYPLUS1_STR);
+        THING_TYPE_MAPPING.put(SHELLYDT_PLUS1PM, THING_TYPE_SHELLYPLUS1PM_STR);
+        THING_TYPE_MAPPING.put(SHELLYDT_PLUS2PM_RELAY, THING_TYPE_SHELLYPLUS2PM_RELAY_STR);
+        THING_TYPE_MAPPING.put(SHELLYDT_PLUS2PM_ROLLER, THING_TYPE_SHELLYPLUS2PM_ROLLER_STR);
+        THING_TYPE_MAPPING.put(SHELLYDT_PRO1, THING_TYPE_SHELLYPRO1_STR);
+        THING_TYPE_MAPPING.put(SHELLYDT_PRO1PM, THING_TYPE_SHELLYPRO1PM_STR);
+        THING_TYPE_MAPPING.put(SHELLYDT_PRO2_RELAY, THING_TYPE_SHELLYPRO2_RELAY_STR);
+        THING_TYPE_MAPPING.put(SHELLYDT_PRO2_ROLLER, THING_TYPE_SHELLYPRO2_ROLLER_STR);
+        THING_TYPE_MAPPING.put(SHELLYDT_PRO2PM_RELAY, THING_TYPE_SHELLYPRO2PM_RELAY_STR);
+        THING_TYPE_MAPPING.put(SHELLYDT_PRO2PM_ROLLER, THING_TYPE_SHELLYPRO2PM_ROLLER_STR);
+        THING_TYPE_MAPPING.put(SHELLYDT_PRO4PM, THING_TYPE_SHELLYPRO4PM_STR);
+        THING_TYPE_MAPPING.put(SHELLYDT_PLUSI4, THING_TYPE_SHELLYPLUSI4_STR);
+        THING_TYPE_MAPPING.put(SHELLYDT_PLUSHT, THING_TYPE_SHELLYPLUSHT_STR);
+
         // mapping by thing type
         THING_TYPE_MAPPING.put(THING_TYPE_SHELLY1_STR, THING_TYPE_SHELLY1_STR);
         THING_TYPE_MAPPING.put(THING_TYPE_SHELLY1PM_STR, THING_TYPE_SHELLY1PM_STR);
@@ -84,6 +99,7 @@ public class ShellyThingCreator {
         THING_TYPE_MAPPING.put(THING_TYPE_SHELLYBUTTON1_STR, THING_TYPE_SHELLYBUTTON1_STR);
         THING_TYPE_MAPPING.put(THING_TYPE_SHELLYBUTTON2_STR, THING_TYPE_SHELLYBUTTON2_STR);
         THING_TYPE_MAPPING.put(THING_TYPE_SHELLYUNI_STR, THING_TYPE_SHELLYUNI_STR);
+        THING_TYPE_MAPPING.put("shellymotion2", THING_TYPE_SHELLYMOTION_STR);
 
         THING_TYPE_MAPPING.put(THING_TYPE_SHELLYPROTECTED_STR, THING_TYPE_SHELLYPROTECTED_STR);
     }
@@ -115,6 +131,9 @@ public class ShellyThingCreator {
         if (devid.isEmpty() || type.isEmpty()) {
             throw new IllegalArgumentException("Invalid device name format: " + hostname);
         }
+        if (hostname.contains("pro1")) {
+            int i = 1;
+        }
 
         // First check for special handling
         if (name.startsWith(THING_TYPE_SHELLY25_PREFIX)) { // Shelly v2.5
@@ -143,13 +162,21 @@ public class ShellyThingCreator {
         }
 
         // Check general mapping
+        int j = 2;
         if (!deviceType.isEmpty()) {
-            String res = THING_TYPE_MAPPING.get(deviceType);
+            String res = THING_TYPE_MAPPING.get(deviceType); // by device type
+            if (res != null) {
+                return res;
+            }
+
+            String dt = mode.equals(SHELLY_MODE_RELAY) || mode.equals(SHELLY_MODE_ROLLER) ? deviceType + "-" + mode
+                    : deviceType;
+            res = THING_TYPE_MAPPING.get(dt); // <DT>-relay / <DT>-roller
             if (res != null) {
                 return res;
             }
         }
-        String res = THING_TYPE_MAPPING.get(type);
+        String res = THING_TYPE_MAPPING.get(type); // cdirectly by thing type
         if (res != null) {
             return res;
         }

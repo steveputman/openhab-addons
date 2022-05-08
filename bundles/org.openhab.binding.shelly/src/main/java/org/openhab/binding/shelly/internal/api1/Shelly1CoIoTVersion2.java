@@ -11,14 +11,14 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 /**
- * The {@link ShellyCoIoTVersion1} implements the parsing for CoIoT version 1
+ * The {@link Shelly1CoIoTVersion1} implements the parsing for CoIoT version 1
  *
  * @author Markus Michels - Initial contribution
  */
-package org.openhab.binding.shelly.internal.coap;
+package org.openhab.binding.shelly.internal.api1;
 
 import static org.openhab.binding.shelly.internal.ShellyBindingConstants.*;
-import static org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.*;
+import static org.openhab.binding.shelly.internal.api1.Shelly1ApiJsonDTO.*;
 import static org.openhab.binding.shelly.internal.util.ShellyUtils.*;
 
 import java.util.List;
@@ -26,11 +26,11 @@ import java.util.Map;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
-import org.openhab.binding.shelly.internal.coap.ShellyCoapJSonDTO.CoIotDescrBlk;
-import org.openhab.binding.shelly.internal.coap.ShellyCoapJSonDTO.CoIotDescrSen;
-import org.openhab.binding.shelly.internal.coap.ShellyCoapJSonDTO.CoIotSensor;
-import org.openhab.binding.shelly.internal.handler.ShellyBaseHandler;
+import org.openhab.binding.shelly.internal.api1.Shelly1CoapJSonDTO.CoIotDescrBlk;
+import org.openhab.binding.shelly.internal.api1.Shelly1CoapJSonDTO.CoIotDescrSen;
+import org.openhab.binding.shelly.internal.api1.Shelly1CoapJSonDTO.CoIotSensor;
 import org.openhab.binding.shelly.internal.handler.ShellyColorUtils;
+import org.openhab.binding.shelly.internal.handler.ShellyThingInterface;
 import org.openhab.core.library.types.OnOffType;
 import org.openhab.core.library.types.OpenClosedType;
 import org.openhab.core.library.unit.SIUnits;
@@ -41,22 +41,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The {@link ShellyCoIoTVersion1} implements the parsing for CoIoT version 2
+ * The {@link Shelly1CoIoTVersion1} implements the parsing for CoIoT version 2
  *
  * @author Markus Michels - Initial contribution
  */
 @NonNullByDefault
-public class ShellyCoIoTVersion2 extends ShellyCoIoTProtocol implements ShellyCoIoTInterface {
-    private final Logger logger = LoggerFactory.getLogger(ShellyCoIoTVersion2.class);
+public class Shelly1CoIoTVersion2 extends Shelly1CoIoTProtocol implements Shelly1CoIoTInterface {
+    private final Logger logger = LoggerFactory.getLogger(Shelly1CoIoTVersion2.class);
+    private int lastCfgCount = -1;
 
-    public ShellyCoIoTVersion2(String thingName, ShellyBaseHandler thingHandler, Map<String, CoIotDescrBlk> blkMap,
+    public Shelly1CoIoTVersion2(String thingName, ShellyThingInterface thingHandler, Map<String, CoIotDescrBlk> blkMap,
             Map<String, CoIotDescrSen> sensorMap) {
         super(thingName, thingHandler, blkMap, sensorMap);
     }
 
     @Override
     public int getVersion() {
-        return ShellyCoapJSonDTO.COIOT_VERSION_2;
+        return Shelly1CoapJSonDTO.COIOT_VERSION_2;
     }
 
     /**
@@ -114,12 +115,13 @@ public class ShellyCoIoTVersion2 extends ShellyCoIoTProtocol implements ShellyCo
                             value != 0 ? OpenClosedType.OPEN : OpenClosedType.CLOSED);
                     break;
                 case "3121": // valvePos, Type=S, Range=0/100;
-                    updateChannel(updates, CHANNEL_GROUP_CONTROL, CHANNEL_CONTROL_POSITION,
+                    boolean updated = updateChannel(updates, CHANNEL_GROUP_CONTROL, CHANNEL_CONTROL_POSITION,
                             s.value != -1 ? toQuantityType(getDouble(s.value), 0, Units.PERCENT) : UnDefType.UNDEF);
-                    break;
-                case "3122": // boostMinutes
-                    updateChannel(updates, CHANNEL_GROUP_CONTROL, CHANNEL_CONTROL_BTIMER,
-                            s.value != -1 ? toQuantityType(s.value, DIGITS_NONE, Units.MINUTE) : UnDefType.UNDEF);
+                    if (updated && s.value >= 0 && s.value != thingHandler.getChannelDouble(CHANNEL_GROUP_CONTROL,
+                            CHANNEL_CONTROL_POSITION)) {
+                        logger.debug("{}: Valve position changed, force update", thingName);
+                        thingHandler.requestUpdates(1, false);
+                    }
                     break;
                 default:
                     processed = false;
@@ -196,10 +198,8 @@ public class ShellyCoIoTVersion2 extends ShellyCoIoTProtocol implements ShellyCo
                 if (idx >= 0) {
                     // H&T, Fllod, DW only have 1 channel, 1/1PM with Addon have up to to 3 sensors
                     String channel = profile.isSensor ? CHANNEL_SENSOR_TEMP : CHANNEL_SENSOR_TEMP + idx;
-                    // Some devices report values = -999 or 99 during fw update
-                    boolean valid = value > -50 && value < 90;
                     updateChannel(updates, CHANNEL_GROUP_SENSOR, channel,
-                            valid ? toQuantityType(value, DIGITS_TEMP, SIUnits.CELSIUS) : UnDefType.UNDEF);
+                            toQuantityType(value, DIGITS_TEMP, SIUnits.CELSIUS));
                 } else {
                     logger.debug("{}: Unable to get extSensorId {} from {}/{}", thingName, sen.id, sen.type, sen.desc);
                 }
@@ -258,7 +258,6 @@ public class ShellyCoIoTVersion2 extends ShellyCoIoTProtocol implements ShellyCo
             case "4305": // emeter_2: P, power, W
             case "4102": // roller_0: P, rollerPower, W, 0-2300, unknown -1
             case "4202": // roller_1: P, rollerPower, W, 0-2300, unknown -1
-                logger.debug("{}: Updating {}:currentWatts with {}", thingName, mGroup, s.value);
                 updateChannel(updates, mGroup, CHANNEL_METER_CURRENTWATTS,
                         toQuantityType(s.value, DIGITS_WATT, Units.WATT));
                 if (!profile.isRGBW2 && !profile.isRoller) {
@@ -386,7 +385,7 @@ public class ShellyCoIoTVersion2 extends ShellyCoIoTProtocol implements ShellyCo
                 }
                 break;
             case "9103": // EVC, cfgChanged, U16
-                if ((lastCfgCount != -1) && (lastCfgCount != s.value)) {
+                if ((lastCfgCount == -1) || (lastCfgCount != s.value)) {
                     thingHandler.requestUpdates(1, true); // refresh config
                 }
                 lastCfgCount = (int) s.value;

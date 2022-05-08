@@ -13,7 +13,7 @@
 package org.openhab.binding.shelly.internal.api;
 
 import static org.eclipse.jetty.http.HttpStatus.*;
-import static org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.*;
+import static org.openhab.binding.shelly.internal.api1.Shelly1ApiJsonDTO.*;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;

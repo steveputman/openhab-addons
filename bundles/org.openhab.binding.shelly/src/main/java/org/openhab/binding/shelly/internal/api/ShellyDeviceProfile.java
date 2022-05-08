@@ -13,7 +13,7 @@
 package org.openhab.binding.shelly.internal.api;
 
 import static org.openhab.binding.shelly.internal.ShellyBindingConstants.*;
-import static org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.*;
+import static org.openhab.binding.shelly.internal.api1.Shelly1ApiJsonDTO.*;
 import static org.openhab.binding.shelly.internal.util.ShellyUtils.*;
 
 import java.util.HashMap;
@@ -23,12 +23,12 @@ import java.util.regex.Pattern;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
-import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsDimmer;
-import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsGlobal;
-import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsInput;
-import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsRelay;
-import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsRgbwLight;
-import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsStatus;
+import org.openhab.binding.shelly.internal.api1.Shelly1ApiJsonDTO.ShellySettingsDimmer;
+import org.openhab.binding.shelly.internal.api1.Shelly1ApiJsonDTO.ShellySettingsGlobal;
+import org.openhab.binding.shelly.internal.api1.Shelly1ApiJsonDTO.ShellySettingsInput;
+import org.openhab.binding.shelly.internal.api1.Shelly1ApiJsonDTO.ShellySettingsRelay;
+import org.openhab.binding.shelly.internal.api1.Shelly1ApiJsonDTO.ShellySettingsRgbwLight;
+import org.openhab.binding.shelly.internal.api1.Shelly1ApiJsonDTO.ShellySettingsStatus;
 import org.openhab.binding.shelly.internal.util.ShellyVersionDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,6 +58,8 @@ public class ShellyDeviceProfile {
     public ShellySettingsStatus status = new ShellySettingsStatus();
 
     public String hostname = "";
+    public String name = "";
+    public String model = "";
     public String mode = "";
     public boolean discoverable = true;
     public boolean auth = false;
@@ -117,7 +119,8 @@ public class ShellyDeviceProfile {
         ShellySettingsGlobal gs = fromJson(gson, json, ShellySettingsGlobal.class);
         settings = gs; // only update when no exception
 
-        // General settings
+        // General settings1
+        name = getString(settings.name);
         deviceType = getString(settings.device.type);
         mac = getString(settings.device.mac);
         hostname = settings.device.hostname != null && !settings.device.hostname.isEmpty()
@@ -150,7 +153,7 @@ public class ShellyDeviceProfile {
             numMeters = inColor ? 1 : getInteger(settings.device.numOutputs);
         }
 
-        if (settings.sleepMode != null) {
+        if (settings.sleepMode != null && !isTRV) {
             // Sensor, usually 12h, H&T in USB mode 10min
             updatePeriod = getString(settings.sleepMode.unit).equalsIgnoreCase("m") ? settings.sleepMode.period * 60 // minutes
                     : settings.sleepMode.period * 3600; // hours
@@ -249,6 +252,10 @@ public class ShellyDeviceProfile {
 
         // e.g. ix3
         return numRelays == 1 ? CHANNEL_GROUP_STATUS : CHANNEL_GROUP_STATUS + idx;
+    }
+
+    public String getMeterGroup(int idx) {
+        return numMeters > 1 ? CHANNEL_GROUP_METER + (idx + 1) : CHANNEL_GROUP_METER;
     }
 
     public String getInputGroup(int i) {

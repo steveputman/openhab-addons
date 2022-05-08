@@ -26,21 +26,21 @@ import javax.measure.Unit;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
-import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellyControlRoller;
-import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellyInputState;
-import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsDimmer;
-import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsEMeter;
-import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsGlobal;
-import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsMeter;
-import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsRelay;
-import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsRgbwLight;
-import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsStatus;
-import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellyShortLightStatus;
-import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellyShortStatusRelay;
-import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellyStatusLightChannel;
-import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellyStatusRelay;
-import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellyStatusSensor;
 import org.openhab.binding.shelly.internal.api.ShellyDeviceProfile;
+import org.openhab.binding.shelly.internal.api1.Shelly1ApiJsonDTO.ShellyInputState;
+import org.openhab.binding.shelly.internal.api1.Shelly1ApiJsonDTO.ShellyRollerStatus;
+import org.openhab.binding.shelly.internal.api1.Shelly1ApiJsonDTO.ShellySettingsDimmer;
+import org.openhab.binding.shelly.internal.api1.Shelly1ApiJsonDTO.ShellySettingsEMeter;
+import org.openhab.binding.shelly.internal.api1.Shelly1ApiJsonDTO.ShellySettingsGlobal;
+import org.openhab.binding.shelly.internal.api1.Shelly1ApiJsonDTO.ShellySettingsMeter;
+import org.openhab.binding.shelly.internal.api1.Shelly1ApiJsonDTO.ShellySettingsRelay;
+import org.openhab.binding.shelly.internal.api1.Shelly1ApiJsonDTO.ShellySettingsRgbwLight;
+import org.openhab.binding.shelly.internal.api1.Shelly1ApiJsonDTO.ShellySettingsStatus;
+import org.openhab.binding.shelly.internal.api1.Shelly1ApiJsonDTO.ShellyShortLightStatus;
+import org.openhab.binding.shelly.internal.api1.Shelly1ApiJsonDTO.ShellyShortStatusRelay;
+import org.openhab.binding.shelly.internal.api1.Shelly1ApiJsonDTO.ShellyStatusLightChannel;
+import org.openhab.binding.shelly.internal.api1.Shelly1ApiJsonDTO.ShellyStatusRelay;
+import org.openhab.binding.shelly.internal.api1.Shelly1ApiJsonDTO.ShellyStatusSensor;
 import org.openhab.binding.shelly.internal.handler.ShellyBaseHandler;
 import org.openhab.core.thing.Channel;
 import org.openhab.core.thing.ChannelUID;
@@ -269,16 +269,13 @@ public class ShellyChannelDefinitions {
         addChannel(thing, add, profile.settings.sleepTime != null, CHGR_SENSOR, CHANNEL_SENSOR_SLEEPTIME);
 
         // If device has more than 1 meter the channel accumulatedWatts receives the accumulated value
-        boolean accuChannel = !profile.isRoller && !profile.isRGBW2
-                && (((status.meters != null) && (status.meters.size() > 1))
-                        || ((status.emeters != null && status.emeters.size() > 1)));
+        boolean accuChannel = (((status.meters != null) && (status.meters.size() > 1) && !profile.isRoller
+                && !profile.isRGBW2) || ((status.emeters != null && status.emeters.size() > 1)));
         addChannel(thing, add, accuChannel, CHGR_DEVST, CHANNEL_DEVST_ACCUWATTS);
         addChannel(thing, add, accuChannel, CHGR_DEVST, CHANNEL_DEVST_ACCUTOTAL);
         addChannel(thing, add, accuChannel && (status.emeters != null), CHGR_DEVST, CHANNEL_DEVST_ACCURETURNED);
-        addChannel(thing, add,
-                !profile.isRoller && !profile.isRGBW2
-                        && (status.voltage != null || profile.settings.supplyVoltage != null),
-                CHGR_DEVST, CHANNEL_DEVST_VOLTAGE);
+        addChannel(thing, add, status.voltage != null || profile.settings.supplyVoltage != null, CHGR_DEVST,
+                CHANNEL_DEVST_VOLTAGE);
         addChannel(thing, add, true, CHGR_DEVST, CHANNEL_DEVST_UPDATE);
         addChannel(thing, add, true, CHGR_DEVST, CHANNEL_DEVST_UPTIME);
         addChannel(thing, add, true, CHGR_DEVST, CHANNEL_DEVST_HEARTBEAT);
@@ -302,7 +299,6 @@ public class ShellyChannelDefinitions {
         ShellySettingsRelay rs = profile.settings.relays.get(idx);
         ShellyShortStatusRelay rstatus = relay.relays.get(idx);
         boolean timer = rs.hasTimer != null || (rstatus != null && rstatus.hasTimer != null); // Dimmer 1/2 have
-                                                                                              // has_timer under /status
         addChannel(thing, add, rs.ison != null, group, CHANNEL_OUTPUT);
         addChannel(thing, add, rs.name != null, group, CHANNEL_OUTPUT_NAME);
         addChannel(thing, add, rs.autoOn != null, group, CHANNEL_TIMER_AUTOON);
@@ -333,7 +329,6 @@ public class ShellyChannelDefinitions {
         ShellySettingsDimmer ds = profile.settings.dimmers.get(idx);
         addChannel(thing, add, ds.autoOn != null, group, CHANNEL_TIMER_AUTOON);
         addChannel(thing, add, ds.autoOff != null, group, CHANNEL_TIMER_AUTOOFF);
-
         ShellyShortLightStatus dss = dstatus.dimmers.get(idx);
         addChannel(thing, add, dss != null && dss.hasTimer != null, group, CHANNEL_TIMER_ACTIVE);
         return add;
@@ -360,8 +355,7 @@ public class ShellyChannelDefinitions {
         if (status.inputs != null) {
             // Create channels per input. For devices with more than 1 input (Dimmer, 1L) multiple channel sets are
             // created by adding the index to the channel name
-            boolean multi = ((profile.numRelays == 1) || profile.isDimmer || profile.isRoller)
-                    && (profile.numInputs >= 2);
+            boolean multi = (profile.numRelays == 1 || profile.isDimmer || profile.isRoller) && profile.numInputs >= 2;
             for (int i = 0; i < profile.numInputs; i++) {
                 String suffix = multi ? String.valueOf(i + 1) : "";
                 ShellyInputState input = status.inputs.get(i);
@@ -381,7 +375,7 @@ public class ShellyChannelDefinitions {
         return add;
     }
 
-    public static Map<String, Channel> createRollerChannels(Thing thing, final ShellyControlRoller roller) {
+    public static Map<String, Channel> createRollerChannels(Thing thing, final ShellyRollerStatus roller) {
         Map<String, Channel> add = new LinkedHashMap<>();
         addChannel(thing, add, true, CHGR_ROLLER, CHANNEL_ROL_CONTROL_CONTROL);
         addChannel(thing, add, true, CHGR_ROLLER, CHANNEL_ROL_CONTROL_STATE);
@@ -514,7 +508,20 @@ public class ShellyChannelDefinitions {
                     channel = ChannelBuilder.create(channelUID, null).withKind(ChannelKind.TRIGGER)
                             .withType(channelTypeUID).build();
                 } else {
-                    channel = ChannelBuilder.create(channelUID, channelDef.itemType).withType(channelTypeUID).build();
+                    ChannelBuilder builder = ChannelBuilder.create(channelUID, channelDef.itemType)
+                            .withType(channelTypeUID);
+                    if (channelName.contains("input")) {
+                        int i = 1;
+                    }
+                    char sequence = channelName.length() > 1 ? channelName.charAt(channelName.length() - 1) : ' ';
+                    String label = !isDigit(sequence) ? channelDef.label : channelDef.label + " " + sequence;
+                    if (!label.isEmpty()) {
+                        builder.withLabel(label);
+                    }
+                    if (!channelDef.description.isEmpty()) {
+                        builder.withDescription(channelDef.description);
+                    }
+                    channel = builder.build();
                 }
                 newChannels.put(channelId, channel);
             }
@@ -549,9 +556,22 @@ public class ShellyChannelDefinitions {
             this.typeId = typeId;
 
             groupLabel = getText(PREFIX_GROUP + group + ".label");
+            if (groupLabel.contains(PREFIX_GROUP)) {
+                groupLabel = "";
+            }
             groupDescription = getText(PREFIX_GROUP + group + ".description");
-            label = getText(PREFIX_CHANNEL + channel + ".label");
-            description = getText(PREFIX_CHANNEL + channel + ".description");
+            if (groupDescription.contains(PREFIX_GROUP)) {
+                groupDescription = "";
+            }
+
+            label = getText(PREFIX_CHANNEL + typeId + ".label");
+            if (label.contains(PREFIX_CHANNEL)) {
+                label = "";
+            }
+            description = getText(PREFIX_CHANNEL + typeId + ".description");
+            if (description.contains(PREFIX_CHANNEL)) {
+                description = "";
+            }
         }
 
         public String getChanneId() {
