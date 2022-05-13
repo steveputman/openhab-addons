@@ -149,7 +149,7 @@ public abstract class ShellyBaseHandler extends BaseThingHandler
             gen = "2";
         }
         gen2 = "2".equals(gen);
-        this.api = !gen2 ? new Shelly1HttpApi(thingName, this) : new Shelly2RpcApi(thingName, this);
+        this.api = !gen2 ? new Shelly1HttpApi(thingType, this) : new Shelly2RpcApi(thingType, this);
         if (gen2) {
             config.eventsCoIoT = false;
         } else {
