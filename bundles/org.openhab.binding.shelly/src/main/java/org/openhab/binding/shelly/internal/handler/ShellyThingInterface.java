@@ -95,4 +95,6 @@ public interface ShellyThingInterface {
     public void fillDeviceStatus(ShellySettingsStatus status, boolean updated);
 
     public void triggerUpdateFromCoap();
+
+    public boolean checkRepresentation(String key);
 }

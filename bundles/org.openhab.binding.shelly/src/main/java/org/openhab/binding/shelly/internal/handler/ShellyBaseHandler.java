@@ -83,6 +83,7 @@ public abstract class ShellyBaseHandler extends BaseThingHandler
 
     public String thingName = "";
     public String thingType = "";
+    public String serviceName = "";
 
     protected final ShellyApiInterface api;
     private final HttpClient httpClient;
@@ -155,6 +156,16 @@ public abstract class ShellyBaseHandler extends BaseThingHandler
         } else {
             this.coap = new Shelly1CoapHandler(this, coapServer);
         }
+    }
+
+    @Override
+    public boolean checkRepresentation(String key) {
+        return key.equalsIgnoreCase(getUID()) || key.equalsIgnoreCase(config.deviceIp)
+                || key.equalsIgnoreCase(serviceName) || key.equalsIgnoreCase(thing.getUID().getAsString());
+    }
+
+    public String getUID() {
+        return getThing().getUID().getAsString();
     }
 
     /**
@@ -1182,9 +1193,10 @@ public abstract class ShellyBaseHandler extends BaseThingHandler
      */
     public void updateProperties(ShellyDeviceProfile profile, ShellySettingsStatus status) {
         Map<String, Object> properties = fillDeviceProperties(profile);
-        String serviceName = getString(getThing().getProperties().get(PROPERTY_SERVICE_NAME));
+        serviceName = getString(getThing().getProperties().get(PROPERTY_SERVICE_NAME));
         String hostname = getString(profile.settings.device.hostname).toLowerCase();
         if (serviceName.isEmpty()) {
+            serviceName = hostname;
             properties.put(PROPERTY_SERVICE_NAME, hostname);
             logger.trace("{}: Updated serrviceName to {}", thingName, hostname);
         }
