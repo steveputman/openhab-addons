@@ -55,9 +55,12 @@ public class ShellyComponents {
                     thingHandler.getProfile(), status));
         }
 
+        if (status.uptime != null) {
+            thingHandler.updateChannel(CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_UPTIME,
+                    toQuantityType((double) getLong(status.uptime), DIGITS_NONE, Units.SECOND));
+        }
+
         Integer rssi = getInteger(status.wifiSta.rssi);
-        thingHandler.updateChannel(CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_UPTIME,
-                toQuantityType((double) getLong(status.uptime), DIGITS_NONE, Units.SECOND));
         thingHandler.updateChannel(CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_RSSI, mapSignalStrength(rssi));
         if ((status.tmp != null) && !thingHandler.getProfile().isSensor) {
             thingHandler.updateChannel(CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_ITEMP,
@@ -387,7 +390,8 @@ public class ShellyComponents {
                             UnDefType.UNDEF);
                 }
                 boolean changed = thingHandler.updateChannel(CHANNEL_GROUP_BATTERY, CHANNEL_SENSOR_BAT_LOW,
-                        getDouble(sdata.bat.value) < thingHandler.config.lowBattery ? OnOffType.ON : OnOffType.OFF);
+                        !charger && getDouble(sdata.bat.value) < thingHandler.config.lowBattery ? OnOffType.ON
+                                : OnOffType.OFF);
                 updated |= changed;
                 if (changed && getDouble(sdata.bat.value) < thingHandler.config.lowBattery) {
                     thingHandler.postEvent(ALARM_TYPE_LOW_BATTERY, false);

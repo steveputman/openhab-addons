@@ -625,7 +625,9 @@ public abstract class ShellyBaseHandler extends BaseThingHandler
             }
         }
 
-        stats.lastUptime = getLong(status.uptime);
+        if (status.uptime != null) {
+            stats.lastUptime = getLong(status.uptime);
+        }
 
         if (!alarm.isEmpty()) {
             postEvent(alarm, false);
@@ -645,8 +647,9 @@ public abstract class ShellyBaseHandler extends BaseThingHandler
 
     private boolean checkRestarted(ShellySettingsStatus status) {
         if (profile.isInitialized() && profile.alwaysOn /* exclude battery powered devices */
-                && (status.uptime < stats.lastUptime || !profile.status.update.oldVersion.isEmpty()
-                        && !status.update.oldVersion.equals(profile.status.update.oldVersion))) {
+                && (status.uptime != null && status.uptime < stats.lastUptime
+                        || !profile.status.update.oldVersion.isEmpty()
+                                && !status.update.oldVersion.equals(profile.status.update.oldVersion))) {
             updateProperties(profile, status);
             return true;
         }

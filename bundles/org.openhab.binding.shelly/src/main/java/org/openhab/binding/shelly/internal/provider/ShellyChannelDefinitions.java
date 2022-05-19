@@ -276,8 +276,9 @@ public class ShellyChannelDefinitions {
         addChannel(thing, add, accuChannel && (status.emeters != null), CHGR_DEVST, CHANNEL_DEVST_ACCURETURNED);
         addChannel(thing, add, status.voltage != null || profile.settings.supplyVoltage != null, CHGR_DEVST,
                 CHANNEL_DEVST_VOLTAGE);
+
+        addChannel(thing, add, profile.status.uptime != null, CHGR_DEVST, CHANNEL_DEVST_UPTIME);
         addChannel(thing, add, true, CHGR_DEVST, CHANNEL_DEVST_UPDATE);
-        addChannel(thing, add, true, CHGR_DEVST, CHANNEL_DEVST_UPTIME);
         addChannel(thing, add, true, CHGR_DEVST, CHANNEL_DEVST_HEARTBEAT);
         addChannel(thing, add, profile.settings.ledPowerDisable != null, CHGR_DEVST, CHANNEL_LED_POWER_DISABLE);
         addChannel(thing, add, profile.settings.ledStatusDisable != null, CHGR_DEVST, CHANNEL_LED_STATUS_DISABLE); // WiFi
