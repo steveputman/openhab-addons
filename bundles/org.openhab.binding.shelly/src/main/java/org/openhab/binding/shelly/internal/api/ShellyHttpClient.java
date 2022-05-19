@@ -16,7 +16,9 @@ import static org.openhab.binding.shelly.internal.ShellyBindingConstants.SHELLY_
 import static org.openhab.binding.shelly.internal.api1.Shelly1ApiJsonDTO.*;
 import static org.openhab.binding.shelly.internal.util.ShellyUtils.fromJson;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -25,6 +27,7 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -47,6 +50,7 @@ public class ShellyHttpClient {
     public static final String HTTP_HEADER_AUTH = "Authorization";
     public static final String HTTP_AUTH_TYPE_BASIC = "Basic";
     public static final String CONTENT_TYPE_JSON = "application/json; charset=UTF-8";
+    public static final String CONTENT_TYPE_FORM_URLENC = "application/x-www-form-urlencoded";
 
     protected final HttpClient httpClient;
     protected ShellyThingConfiguration config = new ShellyThingConfiguration();
@@ -87,13 +91,18 @@ public class ShellyHttpClient {
         return fromJson(gson, json, classOfT);
     }
 
+    public <T> T postApi(String uri, String data, Class<T> classOfT) throws ShellyApiException {
+        String json = httpPost(uri, data);
+        return fromJson(gson, json, classOfT);
+    }
+
     protected String httpRequest(String uri) throws ShellyApiException {
         ShellyApiResult apiResult = new ShellyApiResult();
         int retries = 3;
         boolean timeout = false;
         while (retries > 0) {
             try {
-                apiResult = innerRequest(HttpMethod.GET, uri);
+                apiResult = innerRequest(HttpMethod.GET, uri, "");
                 if (timeout) {
                     logger.debug("{}: API timeout #{}/{} recovered ({})", thingName, timeoutErrors, timeoutsRecovered,
                             apiResult.getUrl());
@@ -116,7 +125,11 @@ public class ShellyHttpClient {
         throw new ShellyApiException("API Timeout or inconsistent result"); // successful
     }
 
-    private ShellyApiResult innerRequest(HttpMethod method, String uri) throws ShellyApiException {
+    public String httpPost(String uri, String data) throws ShellyApiException {
+        return innerRequest(HttpMethod.POST, uri, data).response;
+    }
+
+    private ShellyApiResult innerRequest(HttpMethod method, String uri, String data) throws ShellyApiException {
         Request request = null;
         String url = "http://" + config.deviceIp + uri;
         ShellyApiResult apiResult = new ShellyApiResult(method.toString(), url);
@@ -130,7 +143,7 @@ public class ShellyHttpClient {
                 request.header(HTTP_HEADER_AUTH,
                         HTTP_AUTH_TYPE_BASIC + " " + Base64.getEncoder().encodeToString(value.getBytes()));
             }
-            request.header(HttpHeader.ACCEPT, CONTENT_TYPE_JSON);
+            fillPostData(request, data);
             logger.trace("{}: HTTP {} for {}", thingName, method, url);
 
             // Do request and get response
@@ -155,6 +168,44 @@ public class ShellyHttpClient {
             throw ex;
         }
         return apiResult;
+    }
+
+    /**
+     * Fill in POST data, set http headers
+     *
+     * @param request HTTP request structure
+     * @param data POST data, might be empty
+     */
+    private void fillPostData(Request request, String data) {
+        boolean json = data.startsWith("{") || data.contains("\": {");
+        String type = json ? CONTENT_TYPE_JSON : CONTENT_TYPE_FORM_URLENC;
+        request.header(HttpHeader.CONTENT_TYPE, type);
+        if (!data.isEmpty()) {
+            StringContentProvider postData;
+            postData = new StringContentProvider(type, data, StandardCharsets.UTF_8);
+            request.content(postData);
+            request.header(HttpHeader.CONTENT_LENGTH, Long.toString(postData.getLength()));
+        }
+    }
+
+    /**
+     * Format POST body depending on content type (JSON or form encoded)
+     *
+     * @param dataMap Field list
+     * @param json true=JSON format, false=form encoded
+     * @return formatted body
+     */
+    public static String buildPostData(Map<String, String> dataMap, boolean json) {
+        String data = "";
+        for (Map.Entry<String, String> e : dataMap.entrySet()) {
+            data = data + (data.isEmpty() ? "" : json ? ", " : "&");
+            if (!json) {
+                data = data + e.getKey() + "=" + e.getValue();
+            } else {
+                data = data + "\"" + e.getKey() + "\" : \"" + e.getValue() + "\"";
+            }
+        }
+        return json ? "{ " + data + " }" : data;
     }
 
     public String getControlUriPrefix(Integer id) {
