@@ -381,19 +381,13 @@ public class ShellyComponents {
                         charger ? OnOffType.ON : OnOffType.OFF);
             }
             if (sdata.bat != null) { // no update for Sense
-                // Shelly HT has external_power under settings, Sense and Motion charger under status
-                if (!charger || !profile.isHT) {
-                    updated |= thingHandler.updateChannel(CHANNEL_GROUP_BATTERY, CHANNEL_SENSOR_BAT_LEVEL,
-                            toQuantityType(getDouble(sdata.bat.value), 0, Units.PERCENT));
-                } else {
-                    updated |= thingHandler.updateChannel(CHANNEL_GROUP_BATTERY, CHANNEL_SENSOR_BAT_LEVEL,
-                            UnDefType.UNDEF);
-                }
+                updated |= thingHandler.updateChannel(CHANNEL_GROUP_BATTERY, CHANNEL_SENSOR_BAT_LEVEL,
+                        toQuantityType(getDouble(sdata.bat.value), 0, Units.PERCENT));
                 boolean changed = thingHandler.updateChannel(CHANNEL_GROUP_BATTERY, CHANNEL_SENSOR_BAT_LOW,
                         !charger && getDouble(sdata.bat.value) < thingHandler.config.lowBattery ? OnOffType.ON
                                 : OnOffType.OFF);
                 updated |= changed;
-                if (changed && getDouble(sdata.bat.value) < thingHandler.config.lowBattery) {
+                if (!charger && changed && getDouble(sdata.bat.value) < thingHandler.config.lowBattery) {
                     thingHandler.postEvent(ALARM_TYPE_LOW_BATTERY, false);
                 }
             }
