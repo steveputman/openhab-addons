@@ -621,9 +621,7 @@ public abstract class ShellyBaseHandler extends BaseThingHandler
         // Check various device indicators like overheating
         if (checkRestarted(status)) {
             // Force re-initialization on next status update
-            if (profile.alwaysOn) {
-                reinitializeThing();
-            }
+            reinitializeThing();
         } else if (getBool(status.overtemperature)) {
             alarm = ALARM_TYPE_OVERTEMP;
         } else if (getBool(status.overload)) {
@@ -690,6 +688,7 @@ public abstract class ShellyBaseHandler extends BaseThingHandler
                 case SHELLY_WAKEUPT_PERIODIC:
                 case SHELLY_WAKEUPT_BUTTON:
                 case SHELLY_WAKEUPT_POWERON:
+                case SHELLY_WAKEUPT_EXT_POWER:
                 case SHELLY_WAKEUPT_UNKNOWN:
                     logger.debug("{}: {}", thingName, messages.get("event.filtered", event));
                 case ALARM_TYPE_NONE:
@@ -1324,7 +1323,7 @@ public abstract class ShellyBaseHandler extends BaseThingHandler
             if (refreshSettings) {
                 profile = api.getDeviceProfile(thingType);
                 if (!isThingOnline()) {
-                    logger.debug("{}:Device profile re-initialized (thingType={})", thingName, thingType);
+                    logger.debug("{}: Device profile re-initialized (thingType={})", thingName, thingType);
                 }
             }
         } finally {

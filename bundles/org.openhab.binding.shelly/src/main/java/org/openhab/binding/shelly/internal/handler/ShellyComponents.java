@@ -102,7 +102,7 @@ public class ShellyComponents {
         // We need to differ
         // Roler+RGBW2 have multiple meters -> aggregate consumption to the functional device
         // Meter and EMeter have a different set of channels
-        if ((profile.numMeters > 0) && ((status.meters != null) || (status.emeters != null))) {
+        if (status.meters != null || status.emeters != null) {
             if (!profile.isRoller && !profile.isRGBW2) {
                 thingHandler.logger.trace("{}: Updating {} {}meter(s)", thingHandler.thingName, profile.numMeters,
                         !profile.isEMeter ? "standard " : "e-");

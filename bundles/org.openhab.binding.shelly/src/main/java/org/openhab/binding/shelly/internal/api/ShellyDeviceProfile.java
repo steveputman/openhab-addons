@@ -310,7 +310,6 @@ public class ShellyDeviceProfile {
             btnType = light.btnType;
         }
 
-        logger.trace("{}: Checking for trigger, button-type[{}] is {}", thingName, idx, btnType);
         return btnType.equalsIgnoreCase(SHELLY_BTNT_MOMENTARY) || btnType.equalsIgnoreCase(SHELLY_BTNT_MOM_ON_RELEASE)
                 || btnType.equalsIgnoreCase(SHELLY_BTNT_ONE_BUTTON) || btnType.equalsIgnoreCase(SHELLY_BTNT_TWO_BUTTON)
                 || btnType.equalsIgnoreCase(SHELLY_BTNT_DETACHED);
