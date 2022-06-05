@@ -49,15 +49,15 @@ public interface ShellyApiInterface {
 
     public void setSleepTime(int value) throws ShellyApiException;
 
-    public ShellyStatusRelay getRelayStatus(Integer relayIndex) throws ShellyApiException;
+    public ShellyStatusRelay getRelayStatus(int relayIndex) throws ShellyApiException;
 
-    public void setRelayTurn(Integer id, String turnMode) throws ShellyApiException;
+    public void setRelayTurn(int id, String turnMode) throws ShellyApiException;
 
-    public ShellyRollerStatus getRollerStatus(Integer rollerIndex) throws ShellyApiException;
+    public ShellyRollerStatus getRollerStatus(int rollerIndex) throws ShellyApiException;
 
-    public void setRollerTurn(Integer relayIndex, String turnMode) throws ShellyApiException;
+    public void setRollerTurn(int relayIndex, String turnMode) throws ShellyApiException;
 
-    public void setRollerPos(Integer relayIndex, Integer position) throws ShellyApiException;
+    public void setRollerPos(int relayIndex, int position) throws ShellyApiException;
 
     public void setTimer(int index, String timerName, int value) throws ShellyApiException;
 
@@ -65,17 +65,17 @@ public interface ShellyApiInterface {
 
     public ShellyStatusLight getLightStatus() throws ShellyApiException;
 
-    public ShellyShortLightStatus getLightStatus(Integer index) throws ShellyApiException;
+    public ShellyShortLightStatus getLightStatus(int index) throws ShellyApiException;
 
     public void setLightMode(String mode) throws ShellyApiException;
 
-    public void setLightParm(Integer lightIndex, String parm, String value) throws ShellyApiException;
+    public void setLightParm(int lightIndex, String parm, String value) throws ShellyApiException;
 
-    public void setLightParms(Integer lightIndex, Map<String, String> parameters) throws ShellyApiException;
+    public void setLightParms(int lightIndex, Map<String, String> parameters) throws ShellyApiException;
 
-    public ShellyShortLightStatus setLightTurn(Integer id, String turnMode) throws ShellyApiException;
+    public ShellyShortLightStatus setLightTurn(int id, String turnMode) throws ShellyApiException;
 
-    public void setBrightness(Integer id, Integer brightness, boolean autoOn) throws ShellyApiException;
+    public void setBrightness(int id, int brightness, boolean autoOn) throws ShellyApiException;
 
     // Valve
     public void setValveMode(boolean auto) throws ShellyApiException;

@@ -558,6 +558,10 @@ public abstract class ShellyBaseHandler extends BaseThingHandler
 
     @Override
     public void setThingOnline() {
+        if (stopping) {
+            logger.debug("{}: Thing should go ONLINE, but handler is shutting down, ignore!", thingName);
+            return;
+        }
         if (!isThingOnline()) {
             updateStatus(ThingStatus.ONLINE);
 
@@ -569,8 +573,15 @@ public abstract class ShellyBaseHandler extends BaseThingHandler
 
     @Override
     public void setThingOffline(ThingStatusDetail detail, String messageKey) {
+        String message = messages.get(messageKey);
+        if (stopping) {
+            logger.debug("{}: Thing should go OFFLINE with status {}, but handler is shutting down -> ignore",
+                    thingName, message);
+            return;
+        }
+
         if (!isThingOffline()) {
-            updateStatus(ThingStatus.OFFLINE, detail, messages.get(messageKey));
+            updateStatus(ThingStatus.OFFLINE, detail, message);
             watchdog = 0;
             channelsCreated = false; // check for new channels after devices gets re-initialized (e.g. new
         }
@@ -599,6 +610,10 @@ public abstract class ShellyBaseHandler extends BaseThingHandler
     @Override
     public void reinitializeThing() {
         logger.debug("{}: Re-Initialize Thing", thingName);
+        if (stopping) {
+            logger.debug("{}: Handler is shutting down, ignore", thingName);
+            return;
+        }
         updateStatus(ThingStatus.UNKNOWN, ThingStatusDetail.CONFIGURATION_PENDING,
                 messages.get("offline.status-error-restarted"));
         requestUpdates(0, true);

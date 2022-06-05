@@ -154,47 +154,46 @@ public class Shelly1HttpApi extends ShellyHttpClient implements ShellyApiInterfa
     }
 
     @Override
-    public ShellyStatusRelay getRelayStatus(Integer relayIndex) throws ShellyApiException {
-        return callApi(SHELLY_URL_STATUS_RELEAY + "/" + relayIndex.toString(), ShellyStatusRelay.class);
+    public ShellyStatusRelay getRelayStatus(int relayIndex) throws ShellyApiException {
+        return callApi(SHELLY_URL_STATUS_RELEAY + "/" + relayIndex, ShellyStatusRelay.class);
     }
 
     @Override
-    public void setRelayTurn(Integer id, String turnMode) throws ShellyApiException {
+    public void setRelayTurn(int id, String turnMode) throws ShellyApiException {
         callApi(getControlUriPrefix(id) + "?" + SHELLY_LIGHT_TURN + "=" + turnMode.toLowerCase(),
                 ShellyShortLightStatus.class);
     }
 
     @Override
-    public ShellyShortLightStatus setLightTurn(Integer id, String turnMode) throws ShellyApiException {
+    public ShellyShortLightStatus setLightTurn(int id, String turnMode) throws ShellyApiException {
         return callApi(getControlUriPrefix(id) + "?" + SHELLY_LIGHT_TURN + "=" + turnMode.toLowerCase(),
                 ShellyShortLightStatus.class);
     }
 
     @Override
-    public void setBrightness(Integer id, Integer brightness, boolean autoOn) throws ShellyApiException {
+    public void setBrightness(int id, int brightness, boolean autoOn) throws ShellyApiException {
         String turn = autoOn ? SHELLY_LIGHT_TURN + "=" + SHELLY_API_ON + "&" : "";
-        httpRequest(getControlUriPrefix(id) + "?" + turn + "brightness=" + brightness.toString());
+        httpRequest(getControlUriPrefix(id) + "?" + turn + "brightness=" + brightness);
     }
 
     @Override
-    public ShellyRollerStatus getRollerStatus(Integer rollerIndex) throws ShellyApiException {
-        String uri = SHELLY_URL_CONTROL_ROLLER + "/" + rollerIndex.toString() + "/pos";
+    public ShellyRollerStatus getRollerStatus(int rollerIndex) throws ShellyApiException {
+        String uri = SHELLY_URL_CONTROL_ROLLER + "/" + rollerIndex + "/pos";
         return callApi(uri, ShellyRollerStatus.class);
     }
 
     @Override
-    public void setRollerTurn(Integer relayIndex, String turnMode) throws ShellyApiException {
-        httpRequest(SHELLY_URL_CONTROL_ROLLER + "/" + relayIndex.toString() + "?go=" + turnMode);
+    public void setRollerTurn(int relayIndex, String turnMode) throws ShellyApiException {
+        httpRequest(SHELLY_URL_CONTROL_ROLLER + "/" + relayIndex + "?go=" + turnMode);
     }
 
     @Override
-    public void setRollerPos(Integer relayIndex, Integer position) throws ShellyApiException {
-        httpRequest(SHELLY_URL_CONTROL_ROLLER + "/" + relayIndex.toString() + "?go=to_pos&roller_pos="
-                + position.toString());
+    public void setRollerPos(int relayIndex, int position) throws ShellyApiException {
+        httpRequest(SHELLY_URL_CONTROL_ROLLER + "/" + relayIndex + "?go=to_pos&roller_pos=" + position);
     }
 
     @Override
-    public ShellyShortLightStatus getLightStatus(Integer index) throws ShellyApiException {
+    public ShellyShortLightStatus getLightStatus(int index) throws ShellyApiException {
         return callApi(getControlUriPrefix(index), ShellyShortLightStatus.class);
     }
 
@@ -379,14 +378,14 @@ public class Shelly1HttpApi extends ShellyHttpClient implements ShellyApiInterfa
      * @throws ShellyApiException
      */
     @Override
-    public void setLightParm(Integer lightIndex, String parm, String value) throws ShellyApiException {
+    public void setLightParm(int lightIndex, String parm, String value) throws ShellyApiException {
         // Bulb, RGW2: /<color mode>/<light id>?parm?value
         // Dimmer: /light/<light id>?parm=value
         httpRequest(getControlUriPrefix(lightIndex) + "?" + parm + "=" + value);
     }
 
     @Override
-    public void setLightParms(Integer lightIndex, Map<String, String> parameters) throws ShellyApiException {
+    public void setLightParms(int lightIndex, Map<String, String> parameters) throws ShellyApiException {
         String url = getControlUriPrefix(lightIndex) + "?";
         int i = 0;
         for (String key : parameters.keySet()) {

@@ -137,8 +137,10 @@ public class ShellyComponents {
                                 updated |= thingHandler.updateChannel(groupName, CHANNEL_METER_LASTMIN1,
                                         toQuantityType(getDouble(meter.counters[0]), DIGITS_WATT, Units.WATT));
                             }
-                            thingHandler.updateChannel(groupName, CHANNEL_LAST_UPDATE,
-                                    getTimestamp(getString(profile.settings.timezone), getLong(meter.timestamp)));
+                            if (meter.timestamp != null) {
+                                thingHandler.updateChannel(groupName, CHANNEL_LAST_UPDATE,
+                                        getTimestamp(getString(profile.settings.timezone), meter.timestamp));
+                            }
                         }
                         m++;
                     }
@@ -186,7 +188,16 @@ public class ShellyComponents {
                 long timestamp = 0l;
                 String groupName = CHANNEL_GROUP_METER;
                 for (ShellySettingsMeter meter : status.meters) {
-                    if (meter.isValid) {
+                    if (meter.isValid == null) {
+                        int i = 1;
+                    }
+                    if (getBool(meter.isValid)) {
+                        // Create channels for 1 Meter
+                        if (!thingHandler.areChannelsCreated()) {
+                            thingHandler.updateChannelDefinitions(ShellyChannelDefinitions
+                                    .createMeterChannels(thingHandler.getThing(), meter, groupName));
+                        }
+
                         currentWatts += getDouble(meter.power);
                         totalWatts += getDouble(meter.total);
                         if (meter.counters != null) {
@@ -196,11 +207,6 @@ public class ShellyComponents {
                             timestamp = getLong(meter.timestamp); // newest one
                         }
                     }
-                }
-                // Create channels for 1 Meter
-                if (!thingHandler.areChannelsCreated()) {
-                    thingHandler.updateChannelDefinitions(ShellyChannelDefinitions
-                            .createMeterChannels(thingHandler.getThing(), status.meters.get(0), groupName));
                 }
 
                 updated |= thingHandler.updateChannel(groupName, CHANNEL_METER_LASTMIN1,

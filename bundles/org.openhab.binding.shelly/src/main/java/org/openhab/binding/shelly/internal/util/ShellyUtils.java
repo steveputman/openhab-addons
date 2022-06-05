@@ -289,9 +289,6 @@ public class ShellyUtils {
 
     public static DateTimeType getTimestamp(String zone, long timestamp) {
         try {
-            if (timestamp == 0) {
-                throw new IllegalArgumentException("Timestamp value 0 is invalid");
-            }
             ZoneId zoneId = !zone.isEmpty() ? ZoneId.of(zone) : ZoneId.systemDefault();
             ZonedDateTime zdt = LocalDateTime.now().atZone(zoneId);
             int delta = zdt.getOffset().getTotalSeconds();

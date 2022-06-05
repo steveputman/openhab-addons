@@ -566,9 +566,9 @@ public class Shelly1ApiJsonDTO {
         @SerializedName("ap_roaming")
         public ShellyApRoaming apRoaming; // FW 1.10+
 
-        public ShellySettingsMqtt mqtt = new ShellySettingsMqtt(); // not used for now
-        public ShellySettingsSntp sntp = new ShellySettingsSntp(); // not used for now
-        public ShellySettingsCoiot coiot = new ShellySettingsCoiot(); // Firmware 1.6+
+        public ShellySettingsMqtt mqtt = new ShellySettingsMqtt();
+        public ShellySettingsSntp sntp = new ShellySettingsSntp();
+        public ShellySettingsCoiot coiot = new ShellySettingsCoiot();
         public ShellySettingsLogin login = new ShellySettingsLogin();
         @SerializedName("pin_code")
         public String pinCode;
