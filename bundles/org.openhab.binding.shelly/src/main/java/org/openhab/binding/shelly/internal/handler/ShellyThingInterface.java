@@ -27,6 +27,7 @@ import org.openhab.core.thing.Channel;
 import org.openhab.core.thing.Thing;
 import org.openhab.core.thing.ThingStatusDetail;
 import org.openhab.core.types.State;
+import org.slf4j.Logger;
 
 /**
  * The {@link ShellyThingInterface} implements the interface for Shelly Manager to access the thing handler
@@ -97,4 +98,6 @@ public interface ShellyThingInterface {
     public void triggerUpdateFromCoap();
 
     public boolean checkRepresentation(String key);
+
+    public Logger getLogger();
 }

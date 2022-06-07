@@ -297,14 +297,16 @@ public class ShellyChannelDefinitions {
         Map<String, Channel> add = new LinkedHashMap<>();
         String group = profile.getControlGroup(idx);
 
-        ShellySettingsRelay rs = profile.settings.relays.get(idx);
-        ShellyShortStatusRelay rstatus = relay.relays.get(idx);
-        boolean timer = rs.hasTimer != null || (rstatus != null && rstatus.hasTimer != null); // Dimmer 1/2 have
-        addChannel(thing, add, rs.ison != null, group, CHANNEL_OUTPUT);
-        addChannel(thing, add, rs.name != null, group, CHANNEL_OUTPUT_NAME);
-        addChannel(thing, add, rs.autoOn != null, group, CHANNEL_TIMER_AUTOON);
-        addChannel(thing, add, rs.autoOff != null, group, CHANNEL_TIMER_AUTOOFF);
-        addChannel(thing, add, timer, group, CHANNEL_TIMER_ACTIVE);
+        if (profile.settings.relays != null) {
+            ShellySettingsRelay rs = profile.settings.relays.get(idx);
+            ShellyShortStatusRelay rstatus = relay.relays.get(idx);
+            boolean timer = rs.hasTimer != null || (rstatus != null && rstatus.hasTimer != null); // Dimmer 1/2 have
+            addChannel(thing, add, rs.ison != null, group, CHANNEL_OUTPUT);
+            addChannel(thing, add, rs.name != null, group, CHANNEL_OUTPUT_NAME);
+            addChannel(thing, add, rs.autoOn != null, group, CHANNEL_TIMER_AUTOON);
+            addChannel(thing, add, rs.autoOff != null, group, CHANNEL_TIMER_AUTOOFF);
+            addChannel(thing, add, timer, group, CHANNEL_TIMER_ACTIVE);
+        }
 
         // Shelly 1/1PM Addon
         if (relay.extTemperature != null) {
@@ -327,11 +329,13 @@ public class ShellyChannelDefinitions {
         // Shelly Dimmer has an additional brightness channel
         addChannel(thing, add, profile.isDimmer, group, CHANNEL_BRIGHTNESS);
 
-        ShellySettingsDimmer ds = profile.settings.dimmers.get(idx);
-        addChannel(thing, add, ds.autoOn != null, group, CHANNEL_TIMER_AUTOON);
-        addChannel(thing, add, ds.autoOff != null, group, CHANNEL_TIMER_AUTOOFF);
-        ShellyShortLightStatus dss = dstatus.dimmers.get(idx);
-        addChannel(thing, add, dss != null && dss.hasTimer != null, group, CHANNEL_TIMER_ACTIVE);
+        if (profile.settings.dimmers != null) {
+            ShellySettingsDimmer ds = profile.settings.dimmers.get(idx);
+            addChannel(thing, add, ds.autoOn != null, group, CHANNEL_TIMER_AUTOON);
+            addChannel(thing, add, ds.autoOff != null, group, CHANNEL_TIMER_AUTOOFF);
+            ShellyShortLightStatus dss = dstatus.dimmers.get(idx);
+            addChannel(thing, add, dss != null && dss.hasTimer != null, group, CHANNEL_TIMER_ACTIVE);
+        }
         return add;
     }
 
@@ -340,13 +344,16 @@ public class ShellyChannelDefinitions {
         Map<String, Channel> add = new LinkedHashMap<>();
         String group = profile.getControlGroup(idx);
 
-        ShellySettingsRgbwLight light = profile.settings.lights.get(idx);
-        // The is no brightness channel in color mode, so we need a power channel
-        addChannel(thing, add, profile.inColor, group, CHANNEL_LIGHT_POWER);
+        if (profile.settings.lights != null) {
+            ShellySettingsRgbwLight light = profile.settings.lights.get(idx);
+            // The is no brightness channel in color mode, so we need a power channel
+            addChannel(thing, add, profile.inColor, group, CHANNEL_LIGHT_POWER);
 
-        addChannel(thing, add, light.autoOn != null, group, CHANNEL_TIMER_AUTOON);
-        addChannel(thing, add, light.autoOff != null, group, CHANNEL_TIMER_AUTOOFF);
-        addChannel(thing, add, status.hasTimer != null, group, CHANNEL_TIMER_ACTIVE);
+            addChannel(thing, add, light.autoOn != null, group, CHANNEL_TIMER_AUTOON);
+            addChannel(thing, add, light.autoOff != null, group, CHANNEL_TIMER_AUTOOFF);
+            addChannel(thing, add, status.hasTimer != null, group, CHANNEL_TIMER_ACTIVE);
+        }
+
         return add;
     }
 
@@ -399,7 +406,7 @@ public class ShellyChannelDefinitions {
         Map<String, Channel> newChannels = new LinkedHashMap<>();
         addChannel(thing, newChannels, meter.power != null, group, CHANNEL_METER_CURRENTWATTS);
         addChannel(thing, newChannels, meter.total != null, group, CHANNEL_METER_TOTALKWH);
-        addChannel(thing, newChannels, (meter.counters != null) && (meter.counters[0] != null), group,
+        addChannel(thing, newChannels, meter.counters != null && meter.counters[0] != null, group,
                 CHANNEL_METER_LASTMIN1);
         addChannel(thing, newChannels, meter.timestamp != null, group, CHANNEL_LAST_UPDATE);
         return newChannels;
@@ -504,27 +511,23 @@ public class ShellyChannelDefinitions {
                 ChannelTypeUID channelTypeUID = channelDef.typeId.contains("system:")
                         ? new ChannelTypeUID(channelDef.typeId)
                         : new ChannelTypeUID(BINDING_ID, channelDef.typeId);
-                Channel channel;
+                ChannelBuilder builder;
                 if (channelDef.typeId.equalsIgnoreCase("system:button")) {
-                    channel = ChannelBuilder.create(channelUID, null).withKind(ChannelKind.TRIGGER)
-                            .withType(channelTypeUID).build();
+                    builder = ChannelBuilder.create(channelUID, null).withKind(ChannelKind.TRIGGER);
                 } else {
-                    ChannelBuilder builder = ChannelBuilder.create(channelUID, channelDef.itemType)
-                            .withType(channelTypeUID);
-                    if (channelName.contains("input")) {
-                        int i = 1;
-                    }
-                    char sequence = channelName.length() > 1 ? channelName.charAt(channelName.length() - 1) : ' ';
-                    String label = !isDigit(sequence) ? channelDef.label : channelDef.label + " " + sequence;
-                    if (!label.isEmpty()) {
-                        builder.withLabel(label);
-                    }
-                    if (!channelDef.description.isEmpty()) {
-                        builder.withDescription(channelDef.description);
-                    }
-                    channel = builder.build();
+                    builder = ChannelBuilder.create(channelUID, channelDef.itemType);
                 }
-                newChannels.put(channelId, channel);
+                if (!channelDef.label.isEmpty()) {
+                    char grseq = lastChar(group);
+                    char chseq = lastChar(channelName);
+                    char sequence = isDigit(chseq) ? chseq : grseq;
+                    String label = !isDigit(sequence) ? channelDef.label : channelDef.label + " " + sequence;
+                    builder.withLabel(label);
+                }
+                if (!channelDef.description.isEmpty()) {
+                    builder.withDescription(channelDef.description);
+                }
+                newChannels.put(channelId, builder.withType(channelTypeUID).build());
             }
         }
     }
@@ -564,8 +567,7 @@ public class ShellyChannelDefinitions {
             if (groupDescription.contains(PREFIX_GROUP)) {
                 groupDescription = "";
             }
-
-            label = getText(PREFIX_CHANNEL + typeId + ".label");
+            label = getText(PREFIX_CHANNEL + typeId.replace(':', '.') + ".label");
             if (label.contains(PREFIX_CHANNEL)) {
                 label = "";
             }

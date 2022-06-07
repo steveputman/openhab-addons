@@ -207,7 +207,8 @@ public class Shelly1CoIoTVersion1 extends Shelly1CoIoTProtocol implements Shelly
                                 getStringType(s.valueStr));
                         break;
                     case "concentration":// Shelly Gas
-                        updateChannel(updates, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_PPM, getDecimal(s.value));
+                        updateChannel(updates, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_PPM,
+                                toQuantityType(getDouble(s.value), DIGITS_NONE, Units.PARTS_PER_MILLION));
                         break;
                     case "sensorerror":
                         updateChannel(updates, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_ERROR, getStringType(s.valueStr));

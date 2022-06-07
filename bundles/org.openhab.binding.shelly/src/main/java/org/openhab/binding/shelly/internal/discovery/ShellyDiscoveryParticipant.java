@@ -155,9 +155,6 @@ public class ShellyDiscoveryParticipant implements MDNSDiscoveryParticipant {
                 deviceName = getString(profile.name);
                 model = getString(profile.deviceType);
                 mode = profile.mode;
-                if (profile.isRoller) {
-                    int i = 1;
-                }
                 properties = ShellyBaseHandler.fillDeviceProperties(profile);
                 logger.trace("{}: thingType={}, deviceType={}, mode={}, symbolic name={}", name, thingType,
                         profile.deviceType, mode.isEmpty() ? "<standard>" : mode, deviceName);

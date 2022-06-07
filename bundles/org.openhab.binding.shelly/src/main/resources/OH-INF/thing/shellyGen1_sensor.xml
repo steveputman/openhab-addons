@@ -433,7 +433,7 @@
 	</channel-type>
 
 	<channel-type id="sensorPPM">
-		<item-type>Number:Density</item-type>
+		<item-type>Number:Dimensionless</item-type>
 		<label>@text/channel-type.shelly.sensorPPM.label</label>
 		<description>@text/channel-type.shelly.sensorPPM.description</description>
 		<category>Gas</category>
@@ -441,7 +441,7 @@
 			<tag>Measurement</tag>
 			<tag>Gas</tag>
 		</tags>
-		<state readOnly="true" pattern="%.0f %unit%">
+		<state readOnly="true" pattern="%.0f ppm">
 		</state>
 	</channel-type>
 

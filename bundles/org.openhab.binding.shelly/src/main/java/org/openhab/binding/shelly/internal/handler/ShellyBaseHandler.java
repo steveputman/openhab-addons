@@ -276,6 +276,7 @@ public abstract class ShellyBaseHandler extends BaseThingHandler
             return false; // force re-initialization
         }
         // Validate device mode
+        tmpPrf.isGen2 = gen2;
         String reqMode = thingType.contains("-") ? substringAfter(thingType, "-") : "";
         if (!reqMode.isEmpty() && !tmpPrf.mode.equals(reqMode)) {
             setThingOffline(ThingStatusDetail.CONFIGURATION_ERROR, "offline.conf-error-wrong-mode");
@@ -499,9 +500,6 @@ public abstract class ShellyBaseHandler extends BaseThingHandler
 
                 // All channels must be created after the first cycle
                 channelsCreated = true;
-
-                // Restart watchdog when status update was successful (no exception)
-                restartWatchdog();
             }
         } catch (ShellyApiException e) {
             // http call failed: go offline except for battery devices, which might be in
@@ -568,6 +566,8 @@ public abstract class ShellyBaseHandler extends BaseThingHandler
             // request 3 updates in a row (during the first 2+3*3 sec)
             requestUpdates(profile.alwaysOn ? 3 : 1, !channelsCreated);
         }
+
+        // Restart watchdog when status update was successful (no exception)
         restartWatchdog();
     }
 
@@ -662,6 +662,8 @@ public abstract class ShellyBaseHandler extends BaseThingHandler
 
         if (coap != null) {
             stats.coiotMessages = coap.getMessageCount();
+        }
+        if (coap != null) {
             stats.coiotErrors = coap.getErrorCount();
         }
     }
@@ -696,7 +698,7 @@ public abstract class ShellyBaseHandler extends BaseThingHandler
 
         if (force || !lastAlarm.equals(event)
                 || (lastAlarm.equals(event) && now() > stats.lastAlarmTs + HEALTH_CHECK_INTERVAL_SEC)) {
-            switch (event) {
+            switch (event.toUpperCase()) {
                 case "":
                 case "0": // DW2 1.8
                 case SHELLY_WAKEUPT_SENSOR:
@@ -938,6 +940,15 @@ public abstract class ShellyBaseHandler extends BaseThingHandler
         }
     }
 
+    public String checkForUpdate() {
+        try {
+            ShellyOtaCheckResult result = api.checkForUpdate();
+            return result.status;
+        } catch (ShellyApiException e) {
+            return "";
+        }
+    }
+
     public void startCoap(ShellyThingConfiguration config, ShellyDeviceProfile profile) throws ShellyApiException {
         if (coap == null || !config.eventsCoIoT) {
             return;
@@ -968,7 +979,9 @@ public abstract class ShellyBaseHandler extends BaseThingHandler
         }
 
         logger.debug("{}: Starting CoIoT (autoCoIoT={}/{})", thingName, bindingConfig.autoCoIoT, autoCoIoT);
-        coap.start(thingName, config);
+        if (coap != null) {
+            coap.start(thingName, config);
+        }
     }
 
     @Override
@@ -1074,9 +1087,6 @@ public abstract class ShellyBaseHandler extends BaseThingHandler
             int idx = 0;
             boolean multiInput = status.inputs.size() >= 2; // device has multiple SW (inputs)
             for (ShellyInputState input : status.inputs) {
-                if (input == null) {
-                    int i = 1;
-                }
                 String group = profile.getControlGroup(idx);
                 String suffix = multiInput ? profile.getInputSuffix(idx) : "";
 
@@ -1235,6 +1245,7 @@ public abstract class ShellyBaseHandler extends BaseThingHandler
         if (!deviceName.isEmpty()) {
             properties.put(PROPERTY_DEV_NAME, deviceName);
         }
+        properties.put(PROPERTY_DEV_GEN, !profile.isGen2 ? "1" : "2");
 
         // add status properties
         if (status.wifiSta != null) {
@@ -1445,12 +1456,8 @@ public abstract class ShellyBaseHandler extends BaseThingHandler
         return stats.asProperties();
     }
 
-    public String checkForUpdate() {
-        try {
-            ShellyOtaCheckResult result = api.checkForUpdate();
-            return result.status;
-        } catch (ShellyApiException e) {
-            return "";
-        }
+    public Logger getLogger() {
+        return logger;
     }
+
 }

@@ -64,6 +64,7 @@ public class ShellyDeviceProfile {
     public boolean discoverable = true;
     public boolean auth = false;
     public boolean alwaysOn = true;
+    public boolean isGen2 = false;
 
     public String hwRev = "";
     public String hwBatchId = "";
@@ -195,7 +196,7 @@ public class ShellyDeviceProfile {
         isDW = thingType.equals(THING_TYPE_SHELLYDOORWIN_STR) || thingType.equals(THING_TYPE_SHELLYDOORWIN2_STR);
         isMotion = thingType.startsWith(THING_TYPE_SHELLYMOTION_STR);
         isSense = thingType.equals(THING_TYPE_SHELLYSENSE_STR);
-        isIX3 = thingType.equals(THING_TYPE_SHELLYIX3_STR);
+        isIX3 = thingType.equals(THING_TYPE_SHELLYIX3_STR) || thingType.equals(THING_TYPE_SHELLYPLUSI4_STR);
         isButton = thingType.equals(THING_TYPE_SHELLYBUTTON1_STR) || thingType.equals(THING_TYPE_SHELLYBUTTON2_STR);
         isSensor = isHT || isFlood || isDW || isSmoke || isGas || isButton || isUNI || isMotion || isSense || isTRV;
         hasBattery = isHT || isFlood || isDW || isSmoke || isButton || isMotion || isTRV;
@@ -275,6 +276,7 @@ public class ShellyDeviceProfile {
         return "";
     }
 
+    @SuppressWarnings("null")
     public boolean inButtonMode(int idx) {
         if (idx < 0) {
             logger.debug("{}: Invalid index {} for inButtonMode()", thingName, idx);
@@ -283,7 +285,7 @@ public class ShellyDeviceProfile {
         String btnType = "";
         if (isButton) {
             return true;
-        } else if (isIX3 && (settings.inputs != null) && (idx < settings.inputs.size())) {
+        } else if (isIX3 && settings.inputs != null && idx < settings.inputs.size()) {
             ShellySettingsInput input = settings.inputs.get(idx);
             btnType = getString(input.btnType);
         } else if (isDimmer) {

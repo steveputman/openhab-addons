@@ -347,4 +347,8 @@ public class ShellyUtils {
     public static boolean isDigit(char c) {
         return c >= '0' && c <= '9';
     }
+
+    public static char lastChar(String s) {
+        return s.length() > 1 ? s.charAt(s.length() - 1) : '*';
+    }
 }

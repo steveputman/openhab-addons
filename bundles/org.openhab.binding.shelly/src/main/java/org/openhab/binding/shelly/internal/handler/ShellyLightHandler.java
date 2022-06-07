@@ -348,12 +348,13 @@ public class ShellyLightHandler extends ShellyBaseHandler {
             col.power = getOnOff(light.ison);
 
             // Channel control/timer
-            ShellySettingsRgbwLight ls = profile.settings.lights.get(lightId);
-            updated |= updateChannel(controlGroup, CHANNEL_TIMER_AUTOON, getDecimal(ls.autoOn));
-            updated |= updateChannel(controlGroup, CHANNEL_TIMER_AUTOOFF, getDecimal(ls.autoOff));
-            updated |= updateChannel(controlGroup, CHANNEL_LIGHT_POWER, col.power);
-            updated |= updateChannel(controlGroup, CHANNEL_TIMER_ACTIVE, getOnOff(light.hasTimer));
-
+            if (profile.settings.lights != null) {
+                ShellySettingsRgbwLight ls = profile.settings.lights.get(lightId);
+                updated |= updateChannel(controlGroup, CHANNEL_TIMER_AUTOON, getDecimal(ls.autoOn));
+                updated |= updateChannel(controlGroup, CHANNEL_TIMER_AUTOOFF, getDecimal(ls.autoOff));
+                updated |= updateChannel(controlGroup, CHANNEL_LIGHT_POWER, col.power);
+                updated |= updateChannel(controlGroup, CHANNEL_TIMER_ACTIVE, getOnOff(light.hasTimer));
+            }
             if (getBool(light.overpower)) {
                 postEvent(ALARM_TYPE_OVERPOWER, false);
             }

@@ -124,6 +124,8 @@ public class Shelly1ApiJsonDTO {
     //
     // API values
     //
+    public static final double SHELLY_APU_INVTEMP = -999.0;
+
     public static final String SHELLY_BTNT_MOMENTARY = "momentary";
     public static final String SHELLY_BTNT_MOM_ON_RELEASE = "momentary_on_release";
     public static final String SHELLY_BTNT_ONE_BUTTON = "one_button";
@@ -719,7 +721,7 @@ public class Shelly1ApiJsonDTO {
 
         // Internal device temp
         public ShellySensorTmp tmp = new ShellySensorTmp(); // Shelly 1PM
-        public Double temperature = -999.0; // Shelly 2.5
+        public Double temperature = SHELLY_APU_INVTEMP; // Shelly 2.5
         public Boolean overtemperature;
 
         // Shelly Dimmer only
