@@ -107,8 +107,8 @@ public class ShellyComponents {
         // Meter and EMeter have a different set of channels
         if (status.meters != null || status.emeters != null) {
             if (!profile.isRoller && !profile.isRGBW2) {
-                thingHandler.getLogger().trace("{}: Updating {} {}meter(s)", thingHandler.getThingName(), profile.numMeters,
-                        !profile.isEMeter ? "standard " : "e-");
+                thingHandler.getLogger().trace("{}: Updating {} {}meter(s)", thingHandler.getThingName(),
+                        profile.numMeters, !profile.isEMeter ? "standard " : "e-");
 
                 // In Relay mode we map eacher meter to the matching channel group
                 int m = 0;

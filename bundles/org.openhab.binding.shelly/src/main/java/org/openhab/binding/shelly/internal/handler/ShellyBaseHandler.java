@@ -1459,5 +1459,4 @@ public abstract class ShellyBaseHandler extends BaseThingHandler
     public Logger getLogger() {
         return logger;
     }
-
 }
