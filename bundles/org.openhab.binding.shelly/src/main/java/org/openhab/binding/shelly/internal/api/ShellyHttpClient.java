@@ -14,7 +14,7 @@ package org.openhab.binding.shelly.internal.api;
 
 import static org.openhab.binding.shelly.internal.ShellyBindingConstants.SHELLY_API_TIMEOUT_MS;
 import static org.openhab.binding.shelly.internal.api1.Shelly1ApiJsonDTO.*;
-import static org.openhab.binding.shelly.internal.util.ShellyUtils.fromJson;
+import static org.openhab.binding.shelly.internal.util.ShellyUtils.*;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -28,9 +28,11 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.StringContentProvider;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
+import org.openhab.binding.shelly.internal.api2.Shelly2ApiJsonDTO.Shelly2RpcBaseMessage;
 import org.openhab.binding.shelly.internal.config.ShellyThingConfiguration;
 import org.openhab.binding.shelly.internal.handler.ShellyThingInterface;
 import org.slf4j.Logger;
@@ -138,7 +140,7 @@ public class ShellyHttpClient {
             request = httpClient.newRequest(url).method(method.toString()).timeout(SHELLY_API_TIMEOUT_MS,
                     TimeUnit.MILLISECONDS);
 
-            if (!config.userId.isEmpty()) {
+            if (!profile.isGen2 && !config.userId.isEmpty()) {
                 String value = config.userId + ":" + config.password;
                 request.header(HTTP_HEADER_AUTH,
                         HTTP_AUTH_TYPE_BASIC + " " + Base64.getEncoder().encodeToString(value.getBytes()));
@@ -149,13 +151,31 @@ public class ShellyHttpClient {
             // Do request and get response
             ContentResponse contentResponse = request.send();
             apiResult = new ShellyApiResult(contentResponse);
+            apiResult.httpCode = contentResponse.getStatus();
             String response = contentResponse.getContentAsString().replace("\t", "").replace("\r\n", "").trim();
             logger.trace("{}: HTTP Response {}: {}", thingName, contentResponse.getStatus(), response);
 
+            if (response.contains("\"error\":{")) { // Gen2
+                Shelly2RpcBaseMessage message = gson.fromJson(response, Shelly2RpcBaseMessage.class);
+                if (message != null && message.error != null) {
+                    apiResult.httpCode = message.error.code;
+                    apiResult.response = message.error.message;
+                    if (getInteger(message.error.code) == HttpStatus.UNAUTHORIZED_401) {
+                        apiResult.authResponse = getString(message.error.message).replaceAll("\\\"", "\"");
+                    }
+                }
+            }
+            HttpFields headers = contentResponse.getHeaders();
+            String auth = headers.get(HttpHeader.WWW_AUTHENTICATE);
+            if (!getString(auth).isEmpty()) {
+                apiResult.authResponse = auth;
+            }
+
             // validate response, API errors are reported as Json
-            if (contentResponse.getStatus() != HttpStatus.OK_200) {
+            if (apiResult.httpCode != HttpStatus.OK_200) {
                 throw new ShellyApiException(apiResult);
             }
+
             if (response.isEmpty() || !response.startsWith("{") && !response.startsWith("[") && !url.contains("/debug/")
                     && !url.contains("/sta_cache_reset")) {
                 throw new ShellyApiException("Unexpected response: " + response);

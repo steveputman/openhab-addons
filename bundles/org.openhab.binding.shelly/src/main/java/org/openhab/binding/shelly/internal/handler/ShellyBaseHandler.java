@@ -42,7 +42,7 @@ import org.openhab.binding.shelly.internal.api1.Shelly1CoapHandler;
 import org.openhab.binding.shelly.internal.api1.Shelly1CoapJSonDTO;
 import org.openhab.binding.shelly.internal.api1.Shelly1CoapServer;
 import org.openhab.binding.shelly.internal.api1.Shelly1HttpApi;
-import org.openhab.binding.shelly.internal.api2.Shelly2RpcApi;
+import org.openhab.binding.shelly.internal.api2.Shelly2ApiRpc;
 import org.openhab.binding.shelly.internal.config.ShellyBindingConfiguration;
 import org.openhab.binding.shelly.internal.config.ShellyThingConfiguration;
 import org.openhab.binding.shelly.internal.discovery.ShellyThingCreator;
@@ -83,7 +83,6 @@ public abstract class ShellyBaseHandler extends BaseThingHandler
 
     public String thingName = "";
     public String thingType = "";
-    public String serviceName = "";
 
     protected final ShellyApiInterface api;
     private final HttpClient httpClient;
@@ -150,7 +149,7 @@ public abstract class ShellyBaseHandler extends BaseThingHandler
             gen = "2";
         }
         gen2 = "2".equals(gen);
-        this.api = !gen2 ? new Shelly1HttpApi(thingType, this) : new Shelly2RpcApi(thingType, this);
+        this.api = !gen2 ? new Shelly1HttpApi(thingType, this) : new Shelly2ApiRpc(thingType, this);
         if (gen2) {
             config.eventsCoIoT = false;
         } else {
@@ -161,7 +160,7 @@ public abstract class ShellyBaseHandler extends BaseThingHandler
     @Override
     public boolean checkRepresentation(String key) {
         return key.equalsIgnoreCase(getUID()) || key.equalsIgnoreCase(config.deviceIp)
-                || key.equalsIgnoreCase(serviceName) || key.equalsIgnoreCase(thing.getUID().getAsString());
+                || key.equalsIgnoreCase(config.serviceName) || key.equalsIgnoreCase(thing.getUID().getAsString());
     }
 
     public String getUID() {
@@ -244,6 +243,7 @@ public abstract class ShellyBaseHandler extends BaseThingHandler
         stopping = false;
         refreshSettings = false;
         lastWakeupReason = "";
+        profile.isGen2 = gen2;
         profile.initFromThingType(thingType);
         api.setConfig(thingName, config);
         cache.setThingName(thingName);
@@ -276,7 +276,6 @@ public abstract class ShellyBaseHandler extends BaseThingHandler
             return false; // force re-initialization
         }
         // Validate device mode
-        tmpPrf.isGen2 = gen2;
         String reqMode = thingType.contains("-") ? substringAfter(thingType, "-") : "";
         if (!reqMode.isEmpty() && !tmpPrf.mode.equals(reqMode)) {
             setThingOffline(ThingStatusDetail.CONFIGURATION_ERROR, "offline.conf-error-wrong-mode");
@@ -305,6 +304,7 @@ public abstract class ShellyBaseHandler extends BaseThingHandler
         showThingConfig(tmpPrf);
 
         // update thing properties
+        tmpPrf.isGen2 = gen2;
         tmpPrf.status = api.getStatus();
         tmpPrf.updateFromStatus(tmpPrf.status);
         updateProperties(tmpPrf, tmpPrf.status);
@@ -883,6 +883,12 @@ public abstract class ShellyBaseHandler extends BaseThingHandler
             logger.debug("{}: Unable to resolve hostname {}", thingName, config.deviceIp);
         }
 
+        config.serviceName = getString(getThing().getProperties().get(PROPERTY_SERVICE_NAME));
+        if (config.serviceName.isEmpty()) {
+            String hostname = getString(profile.settings.device.hostname).toLowerCase();
+            config.serviceName = hostname;
+        }
+
         config.localIp = localIP;
         config.localPort = localPort;
         if (config.userId.isEmpty() && !bindingConfig.defaultUserId.isEmpty()) {
@@ -1234,13 +1240,9 @@ public abstract class ShellyBaseHandler extends BaseThingHandler
      */
     public void updateProperties(ShellyDeviceProfile profile, ShellySettingsStatus status) {
         Map<String, Object> properties = fillDeviceProperties(profile);
-        serviceName = getString(getThing().getProperties().get(PROPERTY_SERVICE_NAME));
+        config.serviceName = getString(getThing().getProperties().get(PROPERTY_SERVICE_NAME));
         String hostname = getString(profile.settings.device.hostname).toLowerCase();
-        if (serviceName.isEmpty()) {
-            serviceName = hostname;
-            properties.put(PROPERTY_SERVICE_NAME, hostname);
-            logger.trace("{}: Updated serrviceName to {}", thingName, hostname);
-        }
+        properties.put(PROPERTY_SERVICE_NAME, config.serviceName);
         String deviceName = getString(profile.settings.name);
         if (!deviceName.isEmpty()) {
             properties.put(PROPERTY_DEV_NAME, deviceName);
@@ -1456,6 +1458,7 @@ public abstract class ShellyBaseHandler extends BaseThingHandler
         return stats.asProperties();
     }
 
+    @Override
     public Logger getLogger() {
         return logger;
     }
