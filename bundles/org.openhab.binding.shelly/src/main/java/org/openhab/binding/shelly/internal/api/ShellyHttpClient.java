@@ -146,7 +146,7 @@ public class ShellyHttpClient {
                         HTTP_AUTH_TYPE_BASIC + " " + Base64.getEncoder().encodeToString(value.getBytes()));
             }
             fillPostData(request, data);
-            logger.trace("{}: HTTP {} for {}", thingName, method, url);
+            logger.trace("{}: HTTP {} for {} {}", thingName, method, url, data);
 
             // Do request and get response
             ContentResponse contentResponse = request.send();
