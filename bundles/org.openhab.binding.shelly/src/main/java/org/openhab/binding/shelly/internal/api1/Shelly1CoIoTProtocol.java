@@ -10,10 +10,10 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.shelly.internal.coap;
+package org.openhab.binding.shelly.internal.api1;
 
 import static org.openhab.binding.shelly.internal.ShellyBindingConstants.*;
-import static org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.*;
+import static org.openhab.binding.shelly.internal.api1.Shelly1ApiJsonDTO.*;
 import static org.openhab.binding.shelly.internal.util.ShellyUtils.*;
 
 import java.util.List;
@@ -21,13 +21,13 @@ import java.util.Map;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.openhab.binding.shelly.internal.api.ShellyApiInterface;
 import org.openhab.binding.shelly.internal.api.ShellyDeviceProfile;
-import org.openhab.binding.shelly.internal.api.ShellyHttpApi;
-import org.openhab.binding.shelly.internal.coap.ShellyCoapJSonDTO.CoIotDescrBlk;
-import org.openhab.binding.shelly.internal.coap.ShellyCoapJSonDTO.CoIotDescrSen;
-import org.openhab.binding.shelly.internal.coap.ShellyCoapJSonDTO.CoIotSensor;
-import org.openhab.binding.shelly.internal.handler.ShellyBaseHandler;
+import org.openhab.binding.shelly.internal.api1.Shelly1CoapJSonDTO.CoIotDescrBlk;
+import org.openhab.binding.shelly.internal.api1.Shelly1CoapJSonDTO.CoIotDescrSen;
+import org.openhab.binding.shelly.internal.api1.Shelly1CoapJSonDTO.CoIotSensor;
 import org.openhab.binding.shelly.internal.handler.ShellyColorUtils;
+import org.openhab.binding.shelly.internal.handler.ShellyThingInterface;
 import org.openhab.core.library.types.OnOffType;
 import org.openhab.core.library.types.OpenClosedType;
 import org.openhab.core.library.types.StringType;
@@ -41,29 +41,28 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 
 /**
- * The {@link ShellyCoIoTProtocol} implements common functions for the CoIoT implementations
+ * The {@link Shelly1CoIoTProtocol} implements common functions for the CoIoT implementations
  *
  * @author Markus Michels - Initial contribution
  */
 @NonNullByDefault
-public class ShellyCoIoTProtocol {
-    private final Logger logger = LoggerFactory.getLogger(ShellyCoIoTProtocol.class);
+public class Shelly1CoIoTProtocol {
+    private final Logger logger = LoggerFactory.getLogger(Shelly1CoIoTProtocol.class);
     protected final String thingName;
-    protected final ShellyBaseHandler thingHandler;
+    protected final ShellyThingInterface thingHandler;
     protected final ShellyDeviceProfile profile;
-    protected final ShellyHttpApi api;
+    protected final ShellyApiInterface api;
     protected final Map<String, CoIotDescrBlk> blkMap;
     protected final Map<String, CoIotDescrSen> sensorMap;
     private final Gson gson = new GsonBuilder().create();
 
     // Due to the fact that the device reports only the current/last status, but no real events, we need to distinguish
     // between a real update or just a repeated status on periodic updates
-    protected int lastCfgCount = -1;
     protected int[] lastEventCount = { -1, -1, -1, -1, -1, -1, -1, -1 }; // 4Pro has 4 relays, so 8 should be fine
     protected String[] inputEvent = { "", "", "", "", "", "", "", "" };
     protected String lastWakeup = "";
 
-    public ShellyCoIoTProtocol(String thingName, ShellyBaseHandler thingHandler, Map<String, CoIotDescrBlk> blkMap,
+    public Shelly1CoIoTProtocol(String thingName, ShellyThingInterface thingHandler, Map<String, CoIotDescrBlk> blkMap,
             Map<String, CoIotDescrSen> sensorMap) {
         this.thingName = thingName;
         this.thingHandler = thingHandler;

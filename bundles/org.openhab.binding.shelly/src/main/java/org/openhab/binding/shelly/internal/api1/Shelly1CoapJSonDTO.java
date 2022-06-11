@@ -10,7 +10,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.shelly.internal.coap;
+package org.openhab.binding.shelly.internal.api1;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -23,11 +23,11 @@ import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
 
 /**
- * The {@link ShellyCoapJSonDTO} helps the CoIoT Json into Java objects
+ * The {@link Shelly1CoapJSonDTO} helps the CoIoT Json into Java objects
  *
  * @author Markus Michels - Initial contribution
  */
-public class ShellyCoapJSonDTO {
+public class Shelly1CoapJSonDTO {
     // Coap
     public static final int COIOT_VERSION_1 = 1;
     public static final int COIOT_VERSION_2 = 2;
@@ -167,7 +167,6 @@ public class ShellyCoapJSonDTO {
                 in.endArray();
                 name = in.nextName();
             }
-
             if (name.equalsIgnoreCase(COIOT_TAG_SEN)) {
                 /*
                  * parse sensor list, e.g.
@@ -221,7 +220,6 @@ public class ShellyCoapJSonDTO {
                     in.endObject();
                     descr.sen.add(sen);
                 }
-
                 in.endArray();
                 if (in.hasNext()) {
                     name = in.nextName();
